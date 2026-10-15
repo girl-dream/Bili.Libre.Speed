@@ -741,6 +741,21 @@ abstract final class Pref {
   static String get videoSync =>
       _setting.get(SettingBoxKey.videoSync, defaultValue: 'display-resample');
 
+  // 与 mpv 自动插入的 scaletempo2 的 max-speed 默认值一致；等于它时不传 af，
+  // 完全走 mpv 原生路径。设置时等于 8 会删掉这个键，这里比较的是同一个字面量。
+  static const double muteAboveSpeedDefault = 8.0;
+
+  static double get muteAboveSpeed =>
+      (_setting.get(SettingBoxKey.muteAboveSpeed) as num?)?.toDouble() ??
+      muteAboveSpeedDefault;
+
+  static String? get tempoFilter {
+    final speed = muteAboveSpeed;
+    return speed == muteAboveSpeedDefault
+        ? null
+        : 'scaletempo2=max-speed=$speed';
+  }
+
   static String get autosync => _setting.get(
     SettingBoxKey.autosync,
     defaultValue: Platform.isAndroid ? '30' : '0',
@@ -1358,22 +1373,35 @@ abstract final class Pref {
       : _setting.get(SettingBoxKey.bufferSecWeak, defaultValue: 985.0);
 
   // bufferProfile: 0=宽带，1=非蜂窝弱网，2=真蜂窝。
+  static double bufferSecFor(int bufferProfile) => switch (bufferProfile) {
+    2 => bufferSecCellular,
+    1 => bufferSecWeak,
+    _ => bufferSec,
+  };
+
+  // 缓冲时长按墙钟秒配置；mpv 的 cache-secs 是媒体秒，需乘当前倍速。
+  static Map<String, String> cacheSecs(double seconds, double playbackSpeed) {
+    final bufSec = seconds * playbackSpeed;
+    return {
+      'cache-secs': bufSec.toStringAsFixed(3),
+      'demuxer-hysteresis-secs':
+          (bufSec * 0.6666666666666666).toStringAsFixed(3),
+    };
+  }
+
   static Map<String, String> initBuffer([
     double playbackSpeed = 1.0,
     int bufferProfile = 0,
   ]) {
-    final (sizeMiB, seconds) = switch (bufferProfile) {
-      2 => (bufferSizeCellular, bufferSecCellular),
-      1 => (bufferSizeWeak, bufferSecWeak),
-      _ => (bufferSize, bufferSec),
+    final sizeMiB = switch (bufferProfile) {
+      2 => bufferSizeCellular,
+      1 => bufferSizeWeak,
+      _ => bufferSize,
     };
-    final bufSec = seconds * playbackSpeed;
     final bufSiz = (sizeMiB * 0x100000).round().toString();
     return {
       'cache': 'yes',
-      'cache-secs': bufSec.toStringAsFixed(3),
-      'demuxer-hysteresis-secs':
-          (bufSec * 0.6666666666666666).toStringAsFixed(3),
+      ...cacheSecs(bufferSecFor(bufferProfile), playbackSpeed),
       'demuxer-max-bytes': bufSiz,
       'demuxer-max-back-bytes': bufSiz,
     };

@@ -806,9 +806,19 @@ class _AudioPageState extends State<AudioPage> {
                   ),
                 ),
               ),
+              if (_controller.player case final infoPlayer?)
+                ListTile(
+                  dense: true,
+                  leading: const Icon(Icons.info_outline, size: 20),
+                  title: const Text('播放信息', style: TextStyle(fontSize: 14)),
+                  onTap: () {
+                    Get.back();
+                    HeaderControlState.showPlayerInfo(context, player: infoPlayer);
+                  },
+                ),
               ListTile(
                 dense: true,
-                leading: const Icon(Icons.warning_amber_rounded, size: 20),
+                leading: const Icon(Icons.flag_outlined, size: 20),
                 title: const Text('举报', style: TextStyle(fontSize: 14)),
                 onTap: () {
                   Get.back();
@@ -816,15 +826,6 @@ class _AudioPageState extends State<AudioPage> {
                 },
               ),
               if (_controller.player case final player?) ...[
-                ListTile(
-                  dense: true,
-                  leading: const Icon(Icons.info_outline, size: 20),
-                  title: const Text('播放信息', style: TextStyle(fontSize: 14)),
-                  onTap: () {
-                    Get.back();
-                    HeaderControlState.showPlayerInfo(context, player: player);
-                  },
-                ),
                 if (PlatformUtils.isMobile)
                   ListTile(
                     dense: true,
@@ -1107,10 +1108,15 @@ class _AudioPageState extends State<AudioPage> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      cover.existsSync()
-                          ? Image.file(cover, width: 170, height: 170,
-                              fit: BoxFit.cover)
-                          : const Icon(Icons.headphones_rounded, size: 120),
+                      Image.file(
+                        cover,
+                        width: 170,
+                        height: 170,
+                        cacheWidth: 170.cacheSize(context),
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, _, _) =>
+                            const Icon(Icons.headphones_rounded, size: 120),
+                      ),
                       const SizedBox(height: 16),
                       SelectionText(offline.showTitle,
                           style: const TextStyle(fontSize: 17)),
