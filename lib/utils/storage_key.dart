@@ -29,6 +29,7 @@ abstract final class SettingBoxKey {
       hardwareDecoding = 'hardwareDecoding',
       videoSync = 'videoSync',
       autosync = 'autosync',
+      muteAboveSpeed = 'muteAboveSpeed',
       p1080 = 'p1080',
       enableAutoEnter = 'enableAutoEnter',
       enableAutoExit = 'enableAutoExit',
@@ -349,7 +350,8 @@ abstract final class LocalCacheKey {
       mixinKey = 'mixinKey',
       timeStamp = 'timeStamp',
       buvid = 'buvid',
-      updateIgnore = 'updateIgnore';
+      updateIgnore = 'updateIgnore',
+      launchSlot = 'launchSlot';
 }
 
 abstract final class VideoBoxKey {
