@@ -34,7 +34,9 @@ abstract final class BroTechScripts {
   /// Downloads one script and replaces the local copy when the bytes differ.
   /// Returns the bytes now on disk, or null when nothing usable arrived.
   static Future<Uint8List?> refresh(int index) =>
-      _pending[index] ??= _refresh(index).whenComplete(() => _pending.remove(index));
+      _pending[index] ??= _refresh(index).whenComplete(() {
+        _pending.remove(index);
+      });
 
   /// Why the last download of each script produced nothing, for the page.
   static final lastError = <int, String>{};
