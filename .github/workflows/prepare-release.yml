@@ -31,7 +31,7 @@ jobs:
         run: |
           rsync -a --delete \
             --exclude='.git/' \
-            --exclude='README.md' \
+            --exclude='/README.md' \
             --exclude='.github' \
             "${RUNNER_TEMP}/release-candidate/" ./
 
