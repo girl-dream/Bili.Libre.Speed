@@ -12,13 +12,12 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 在哪个分支运行，就迁出并提交回哪个分支。
-      - name: 迁出当前分支
+      - name: 迁出分支
         uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
-      - name: 获取候选版本
+      - name: 获取候选
         shell: bash
         run: |
           git clone --depth 1 --branch dev \
@@ -26,7 +25,7 @@ jobs:
             "${RUNNER_TEMP}/release-candidate"
           echo "SOURCE_SHA=$(git -C "${RUNNER_TEMP}/release-candidate" rev-parse HEAD)" >> "${GITHUB_ENV}"
 
-      - name: 镜像候选版本
+      - name: 镜像版本
         shell: bash
         run: |
           rsync -a --delete \
