@@ -12,10 +12,10 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout upStream
+      # 在哪个分支运行，就迁出并提交回哪个分支。
+      - name: 迁出当前分支
         uses: actions/checkout@v7
         with:
-          ref: upStream
           fetch-depth: 0
 
       - name: 获取候选版本
@@ -35,7 +35,7 @@ jobs:
             --exclude='.github' \
             "${RUNNER_TEMP}/release-candidate/" ./
 
-      - name: 提交到 upStream
+      - name: 提交回当前分支
         shell: bash
         run: |
           git config user.name "keil5-commits"
@@ -52,7 +52,7 @@ jobs:
             --author="Reality <244209739+1-Reality@users.noreply.github.com>" \
             -m "prepare: release candidate @ ${SOURCE_SHA:0:12}" \
             -m $'Co-authored-by: 哥哥科技 <175325443+ucxn@users.noreply.github.com>\nCo-authored-by: boli0301 <182537019+boli0301@users.noreply.github.com>'
-          git push origin HEAD:upStream
+          git push origin "HEAD:${GITHUB_REF_NAME}"
 
-          echo "Prepared from: 1-Reality/BiliVideo-Lab@${SOURCE_SHA}" >> "${GITHUB_STEP_SUMMARY}"
+          echo "Prepared ${GITHUB_REF_NAME} from: 1-Reality/BiliVideo-Lab@${SOURCE_SHA}" >> "${GITHUB_STEP_SUMMARY}"
           echo "Preserved: README.md and .github/workflows/" >> "${GITHUB_STEP_SUMMARY}"
