@@ -519,10 +519,10 @@ jobs:
             Move-Item $_.FullName "PiliBro-Win-Setup/PiliBro_windows_${{ env.version }}_x64_setup.exe"
           }
 
-      - name: Compress portable ZIP
+      - name: Compress portable 7z
         if: ${{ inputs.tag != '' }}
         shell: pwsh
-        run: Compress-Archive -Path "Release/PiliBro-Win" -DestinationPath "PiliBro_windows_${{ env.version }}_x64_portable.zip"
+        run: 7z a -mx9 "PiliBro_windows_${{ env.version }}_x64_portable.7z" "Release/PiliBro-Win"
 
       - name: Upload Windows setup
         uses: actions/upload-artifact@v7
@@ -537,7 +537,7 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: release-windows-portable
-          path: PiliBro_windows_*_x64_portable.zip
+          path: PiliBro_windows_*_x64_portable.7z
           if-no-files-found: error
           retention-days: 7
 
@@ -603,7 +603,7 @@ jobs:
               "android_armv7": one("PiliBro_android_*_armeabi-v7a.apk"),
               "android_x86": one("PiliBro_android_*_x86_64.apk"),
               "windows_setup": one("PiliBro_windows_*_x64_setup.exe"),
-              "windows_portable": one("PiliBro_windows_*_x64_portable.zip"),
+              "windows_portable": one("PiliBro_windows_*_x64_portable.7z"),
               "ios": maybe_one("PiliBro_ios_*.ipa"),
               "mac": maybe_one("PiliBro_macos_*.dmg"),
               "linux_targz": maybe_one("PiliBro_linux_*_amd64.tar.gz"),
