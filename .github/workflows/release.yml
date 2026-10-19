@@ -475,11 +475,24 @@ jobs:
           channel: stable
           flutter-version-file: pubspec.yaml
 
-      - name: Add fastforge and Inno Setup
+      - name: Add fastforge, Inno Setup and WinRAR
         shell: pwsh
         run: |
           dart pub global activate fastforge
           choco install innosetup
+          choco install winrar --version=7.20.0 -y --no-progress --params="'/English'"
+
+          $rar = @(
+            "$env:ProgramFiles\WinRAR\rar.exe",
+            "$env:ProgramFiles(x86)\WinRAR\rar.exe"
+          ) | Where-Object { Test-Path $_ } | Select-Object -First 1
+
+          if (-not $rar) {
+            throw "WinRAR rar.exe not found after installation."
+          }
+
+          & $rar | Select-Object -First 1
+          "RAR_EXE=$rar" >> $env:GITHUB_ENV
 
       - name: Add Chinese language file for Inno Setup
         shell: pwsh
@@ -519,10 +532,14 @@ jobs:
             Move-Item $_.FullName "PiliBro-Win-Setup/PiliBro_windows_${{ env.version }}_x64_setup.exe"
           }
 
-      - name: Compress portable 7z
+      - name: Compress portable RAR
         if: ${{ inputs.tag != '' }}
         shell: pwsh
-        run: 7z a -mx9 "PiliBro_windows_${{ env.version }}_x64_portable.7z" "Release/PiliBro-Win"
+        run: |
+          & $env:RAR_EXE a -ma5 -m5 -r "PiliBro_windows_${{ env.version }}_x64_portable.rar" "Release/PiliBro-Win"
+          if ($LASTEXITCODE -ne 0) {
+            exit $LASTEXITCODE
+          }
 
       - name: Upload Windows setup
         uses: actions/upload-artifact@v7
@@ -537,7 +554,7 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: release-windows-portable
-          path: PiliBro_windows_*_x64_portable.7z
+          path: PiliBro_windows_*_x64_portable.rar
           if-no-files-found: error
           retention-days: 7
 
@@ -603,7 +620,7 @@ jobs:
               "android_armv7": one("PiliBro_android_*_armeabi-v7a.apk"),
               "android_x86": one("PiliBro_android_*_x86_64.apk"),
               "windows_setup": one("PiliBro_windows_*_x64_setup.exe"),
-              "windows_portable": one("PiliBro_windows_*_x64_portable.7z"),
+              "windows_portable": one("PiliBro_windows_*_x64_portable.rar"),
               "ios": maybe_one("PiliBro_ios_*.ipa"),
               "mac": maybe_one("PiliBro_macos_*.dmg"),
               "linux_targz": maybe_one("PiliBro_linux_*_amd64.tar.gz"),
@@ -631,7 +648,7 @@ jobs:
           <img alt="vivo" src="https://img.shields.io/badge/-415FFF?style=for-the-badge&logo=vivo&logoColor=white&logoSize=auto" />
           <img alt="HUAWEI" src="https://img.shields.io/badge/HUAWEI-C7000B?style=for-the-badge&logo=huawei&logoColor=white" />
           <img alt="HONOR" src="https://img.shields.io/badge/-000000?style=for-the-badge&logo=honor&logoColor=white&logoSize=auto" />
-          <img alt="Samsung" src="https://img.shields.io/badge/%20-1428A0?style=for-the-badge&logo=samsung&logoColor=white&logoSize=auto" />
+          <img alt="Samsung" src="https://img.shields.io/badge/%20-1428A0?style=for-the-badge&logo=samsung&logoColor=white" />
           <img alt="Google Pixel" src="https://img.shields.io/badge/Pixel-4285F4?style=for-the-badge&logo=google&logoColor=white" />
           <img alt="nubia/ REDMAGIC" height="18" src="https://upload.wikimedia.org/wikipedia/commons/f/f6/Nubia_logo.svg" />
 
