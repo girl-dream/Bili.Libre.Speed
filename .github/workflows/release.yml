@@ -117,7 +117,7 @@ jobs:
         with:
           distribution: "zulu"
           java-version: "17"
-          cache: "gradle"
+          cache: ${{ inputs.tag == '' && 'gradle' || '' }}
           cache-dependency-path: |
             android/*.gradle*
             android/**/gradle-wrapper.properties
@@ -127,7 +127,7 @@ jobs:
         with:
           channel: stable
           flutter-version-file: pubspec.yaml
-          cache: true
+          cache: ${{ inputs.tag == '' }}
 
       - name: Apply Patch
         shell: pwsh
@@ -205,6 +205,7 @@ jobs:
         with:
           channel: stable
           flutter-version-file: pubspec.yaml
+          cache: ${{ inputs.tag == '' }}
 
       - name: Set and Extract version
         shell: pwsh
@@ -254,6 +255,7 @@ jobs:
         with:
           channel: stable
           flutter-version-file: pubspec.yaml
+          cache: ${{ inputs.tag == '' }}
 
       - name: Set and Extract version
         shell: pwsh
@@ -312,7 +314,7 @@ jobs:
         with:
           channel: stable
           flutter-version-file: pubspec.yaml
-          cache: true
+          cache: ${{ inputs.tag == '' }}
 
       - name: Set and Extract version
         shell: pwsh
@@ -474,6 +476,7 @@ jobs:
         with:
           channel: stable
           flutter-version-file: pubspec.yaml
+          cache: ${{ inputs.tag == '' }}
 
       - name: Add fastforge, Inno Setup and WinRAR
         shell: pwsh
