@@ -140,7 +140,6 @@ void main() async {
   late final num? due;
   try {
     due = await GStorage.init();
-    await PlaybackArchiveService.archiveIfDue();
   } catch (e) {
     await Utils.copyText(e.toString(), needToast: false);
     if (kDebugMode) debugPrint('GStorage init error: $e');
