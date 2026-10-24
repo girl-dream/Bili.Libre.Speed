@@ -60,6 +60,9 @@ abstract final class Pref {
   static final Box _video = GStorage.video;
   static final Box _localCache = GStorage.localCache;
 
+  static String parseBanWord(String value) =>
+      value.contains('|') ? value : value.replaceAll('，', '|');
+
   static UserInfoData? get userInfoCache =>
       GStorage.userInfo.get('userInfoCache');
 
@@ -400,6 +403,7 @@ abstract final class Pref {
         SettingBoxKey.advancedExitOrientationMode,
         defaultValue: ExitOrientationMode.keepPlayer.index,
       )];
+
 
   static const _brotherAppFallback = BrotherPhaseConfig(
     enterAction: BrotherDirectionAction.systemCurrent,
@@ -791,14 +795,17 @@ abstract final class Pref {
     ];
   }
 
-  static String get banWordForRecommend =>
-      _setting.get(SettingBoxKey.banWordForRecommend, defaultValue: '');
+  static String get banWordForRecommend => parseBanWord(
+    _setting.get(SettingBoxKey.banWordForRecommend, defaultValue: ''),
+  );
 
-  static String get banWordForReply =>
-      _setting.get(SettingBoxKey.banWordForReply, defaultValue: '');
+  static String get banWordForReply => parseBanWord(
+    _setting.get(SettingBoxKey.banWordForReply, defaultValue: ''),
+  );
 
-  static String get banWordForZone =>
-      _setting.get(SettingBoxKey.banWordForZone, defaultValue: '');
+  static String get banWordForZone => parseBanWord(
+    _setting.get(SettingBoxKey.banWordForZone, defaultValue: ''),
+  );
 
   static bool get appRcmd =>
       _setting.get(SettingBoxKey.appRcmd, defaultValue: false);
@@ -1125,8 +1132,9 @@ abstract final class Pref {
     return horizontalScreen;
   }
 
-  static String get banWordForDyn =>
-      _setting.get(SettingBoxKey.banWordForDyn, defaultValue: '');
+  static String get banWordForDyn => parseBanWord(
+    _setting.get(SettingBoxKey.banWordForDyn, defaultValue: ''),
+  );
 
   static bool get enableLog =>
       _setting.get(SettingBoxKey.enableLog, defaultValue: true);

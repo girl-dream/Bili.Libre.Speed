@@ -1,5 +1,6 @@
 package org.BroTech.gege.pilibro
 
+import android.annotation.TargetApi
 import android.app.UiModeManager
 import android.content.Context
 import android.content.ComponentName
@@ -371,41 +372,26 @@ class MainActivity : AudioServiceActivity() {
             return false
         }
 
-        val settings = buildList {
-            add(
-                PackageManager.ComponentEnabledSetting(
-                    defaultComponent,
-                    if (target == null) {
-                        PackageManager.COMPONENT_ENABLED_STATE_ENABLED
-                    } else {
-                        PackageManager.COMPONENT_ENABLED_STATE_DISABLED
-                    },
-                    PackageManager.DONT_KILL_APP,
-                ),
-            )
-            aliases.forEach { alias ->
-                add(
-                    PackageManager.ComponentEnabledSetting(
-                        alias,
-                        if (alias == target) {
-                            PackageManager.COMPONENT_ENABLED_STATE_ENABLED
-                        } else {
-                            PackageManager.COMPONENT_ENABLED_STATE_DISABLED
-                        },
-                        PackageManager.DONT_KILL_APP,
-                    ),
-                )
-            }
-        }
-
+        // Android 13 adds the batch API and its ComponentEnabledSetting type.
+        // Do not even construct that type on older Android releases.
+        val enabled = target ?: defaultComponent
+        val others = (aliases + defaultComponent).filter { it != enabled }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            packageManager.setComponentEnabledSettings(settings)
+            Android13IconApi.apply(packageManager, enabled, others)
         } else {
-            settings.forEach {
+            // Older Android applies each change separately: enable the new
+            // launcher first, then disable the old entries so none disappear
+            // in between.
+            packageManager.setComponentEnabledSetting(
+                enabled,
+                PackageManager.COMPONENT_ENABLED_STATE_ENABLED,
+                PackageManager.DONT_KILL_APP,
+            )
+            others.forEach {
                 packageManager.setComponentEnabledSetting(
-                    it.componentName!!,
-                    it.enabledState,
-                    it.enabledFlags,
+                    it,
+                    PackageManager.COMPONENT_ENABLED_STATE_DISABLED,
+                    PackageManager.DONT_KILL_APP,
                 )
             }
         }
@@ -448,5 +434,32 @@ class MainActivity : AudioServiceActivity() {
         } else {
             0
         }
+    }
+}
+
+
+// Keep Android 13-only types out of MainActivity's class verification path.
+// The implementation stays in this source file and is called only by the
+// SDK >= 33 branch above.
+@TargetApi(33)
+private object Android13IconApi {
+    fun apply(
+        packageManager: PackageManager,
+        enabled: ComponentName,
+        disabled: List<ComponentName>,
+    ) {
+        packageManager.setComponentEnabledSettings(
+            (listOf(enabled) + disabled).map { component ->
+                PackageManager.ComponentEnabledSetting(
+                    component,
+                    if (component == enabled) {
+                        PackageManager.COMPONENT_ENABLED_STATE_ENABLED
+                    } else {
+                        PackageManager.COMPONENT_ENABLED_STATE_DISABLED
+                    },
+                    PackageManager.DONT_KILL_APP,
+                )
+            },
+        )
     }
 }
