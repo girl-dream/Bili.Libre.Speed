@@ -26,6 +26,12 @@ import 'package:material_ui/material_ui.dart';
 /// background playback and audio output. Audio CDN and audio quality stay with
 /// the CDN and quality settings they belong to.
 List<SettingsModel> get audioSettings => [
+  NormalModel(
+    onTap: (context, setState) => Get.toNamed('/gestureSettings'),
+    leading: const Icon(Icons.swipe_outlined),
+    title: '手势',
+    subtitle: '上下、左右滑动的分区与动作：亮度、音量、倍速、进度、全屏',
+  ),
   const SwitchModel(
     title: '音视频快捷切换（听视频模式）',
     subtitle: '首页右上角可一键切换默认进入音频或视频；关闭后不构建该入口',
@@ -33,6 +39,13 @@ List<SettingsModel> get audioSettings => [
     setKey: SettingBoxKey.enableAudioFirst,
     needReboot: true,
     onChanged: AudioFirstMode.onEnabledChanged,
+  ),
+  const SwitchModel(
+    title: '应用内小窗',
+    subtitle: '视频页头部出现小窗按钮：点击后视频缩成可拖动、可缩放的悬浮小窗，点返回无缝回到视频页',
+    leading: Icon(Icons.picture_in_picture_alt_outlined),
+    setKey: SettingBoxKey.enableInAppPip,
+    defaultVal: false,
   ),
   const SwitchModel(
     title: '底部播放条',
@@ -107,25 +120,24 @@ List<SettingsModel> get audioSettings => [
       getSubtitle: () => '当前:「${(Pref.maxVolume * 100).round()}%」',
       onTap: showMaxVolumeDialog,
     ),
-  if (kDebugMode || Platform.isAndroid)
-    NormalModel(
-      title: '音量均衡',
-      leading: const Icon(Icons.multitrack_audio),
-      getSubtitle: () {
-        final audioNormalization = AudioNormalization.getTitleFromConfig(
-          Pref.audioNormalization,
-        );
-        String fallback = Pref.fallbackNormalization;
-        if (fallback == '0') {
-          fallback = '';
-        } else {
-          fallback =
-              '，无参数时:「${AudioNormalization.getTitleFromConfig(fallback)}」';
-        }
-        return '当前:「$audioNormalization」$fallback';
-      },
-      onTap: audioNormalization,
-    ),
+  NormalModel(
+    title: '音量均衡',
+    leading: const Icon(Icons.multitrack_audio),
+    getSubtitle: () {
+      final audioNormalization = AudioNormalization.getTitleFromConfig(
+        Pref.audioNormalization,
+      );
+      String fallback = Pref.fallbackNormalization;
+      if (fallback == '0') {
+        fallback = '';
+      } else {
+        fallback =
+            '，无参数时:「${AudioNormalization.getTitleFromConfig(fallback)}」';
+      }
+      return '当前:「$audioNormalization」$fallback';
+    },
+    onTap: audioNormalization,
+  ),
   if (kDebugMode || Platform.isAndroid)
     NormalModel(
       title: '音频输出设备',
@@ -142,7 +154,7 @@ class AudioSettingsPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final settings = audioSettings;
     return SimpleScaffold(
-      appBar: AppBar(title: const Text('音频与后台')),
+      appBar: AppBar(title: const Text('特色播放')),
       body: ListView.builder(
         padding: EdgeInsets.only(
           bottom: MediaQuery.viewPaddingOf(context).bottom + 100,
