@@ -712,7 +712,7 @@ jobs:
 
           <a href="{win_setup}"><img alt="Windows" height="28" src="{win_logo}" /></a> [![AMD](https://img.shields.io/badge/%20-ED1C24?style=for-the-badge&logo=amd&logoColor=white&logoSize=auto)]({win_portable}) <a href="{win_setup}"><img alt="Gaming laptop" height="42" src="{laptop}" /></a>
 
-          <sub>32 位版不随每个版本发布，需要的话请往前翻几个版本找找。</sub>''')
+          <sub>32位版 并不保证随每个版本发布，需要的话请往前移步翻几个版本找找。</sub>''')
 
           if files["mac"] or files["ios"] or files["linux_targz"]:
               parts.append("---")
