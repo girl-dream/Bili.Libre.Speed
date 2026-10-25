@@ -28,6 +28,11 @@ on:
         required: false
         default: true
         type: boolean
+      build_win_x86:
+        description: "Build Windows x86（失败不影响发布）"
+        required: false
+        default: false
+        type: boolean
       tag:
         description: "Release tag；留空则只构建，不发布"
         required: false
@@ -561,9 +566,24 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
+  # 旁路：发布会等它跑完以便带上安装包，但成败不参与发布判断。
+  # 直接调用 Lab 仓库的 32 位工作流（检出的是本仓库代码），引擎和 ANGLE 从 Lab 的 Release 下载
+  win_x86:
+    name: Windows x86
+    needs: validate
+    if: ${{ inputs.build_win_x86 }}
+    uses: 1-Reality/BiliVideo-Lab/.github/workflows/win_x86_app.yml@dev
+    permissions:
+      contents: read
+    with:
+      tag: ${{ inputs.tag }}
+      build_number: ${{ inputs.build_number }}
+      archive: 7z
+      artifact: release-windows-x86
+
   release:
     name: 发布 Release
-    needs: [validate, android, ios, mac, linux_x64, win_x64]
+    needs: [validate, android, ios, mac, linux_x64, win_x64, win_x86]
     if: >-
       ${{
         always() &&
@@ -624,6 +644,7 @@ jobs:
               "android_x86": one("PiliBro_android_*_x86_64.apk"),
               "windows_setup": one("PiliBro_windows_*_x64_setup.exe"),
               "windows_portable": one("PiliBro_windows_*_x64_portable.rar"),
+              "windows_x86": maybe_one("PiliBro_windows_*_x86_portable.7z"),
               "ios": maybe_one("PiliBro_ios_*.ipa"),
               "mac": maybe_one("PiliBro_macos_*.dmg"),
               "linux_targz": maybe_one("PiliBro_linux_*_amd64.tar.gz"),
@@ -675,9 +696,23 @@ jobs:
           win_setup = asset_url("windows_setup")
           win_portable = asset_url("windows_portable")
           laptop = f"https://raw.githubusercontent.com/{repo}/{tag_url}/.vscode/laptop.svg"
-          parts.append(f'''Windows x86_64 [下载]({win_setup})
+          win_logo = "https://commons.wikimedia.org/wiki/Special:Redirect/file/Unofficial_Windows_logo_variant_-_2002%E2%80%932012_%28Multicolored%29.svg"
+          if files["windows_x86"]:
+              # 有 32 位包：老 Windows 徽标让给 32 位那一行，64 位只留两个图标
+              win_x86 = asset_url("windows_x86")
+              desktop = f"https://raw.githubusercontent.com/{repo}/{tag_url}/.vscode/desktop.svg"
+              parts.append(f'''Windows x86_64 [下载]({win_setup})
 
-          <a href="{win_setup}"><img alt="Windows" height="28" src="https://commons.wikimedia.org/wiki/Special:Redirect/file/Unofficial_Windows_logo_variant_-_2002%E2%80%932012_%28Multicolored%29.svg" /></a> [![AMD](https://img.shields.io/badge/%20-ED1C24?style=for-the-badge&logo=amd&logoColor=white&logoSize=auto)]({win_portable}) <a href="{win_setup}"><img alt="Gaming laptop" height="42" src="{laptop}" /></a>''')
+          [![AMD](https://img.shields.io/badge/%20-ED1C24?style=for-the-badge&logo=amd&logoColor=white&logoSize=auto)]({win_portable}) <a href="{win_setup}"><img alt="Gaming laptop" height="42" src="{laptop}" /></a>''')
+              parts.append(f'''Windows x86_32 位 [下载]({win_x86})（老电脑、32 位系统用；Win7 请看压缩包里的说明）
+
+          <a href="{win_x86}"><img alt="Windows" height="28" src="{win_logo}" /></a> <a href="{win_x86}"><img alt="Old desktop" height="42" src="{desktop}" /></a>''')
+          else:
+              parts.append(f'''Windows x86_64 [下载]({win_setup})
+
+          <a href="{win_setup}"><img alt="Windows" height="28" src="{win_logo}" /></a> [![AMD](https://img.shields.io/badge/%20-ED1C24?style=for-the-badge&logo=amd&logoColor=white&logoSize=auto)]({win_portable}) <a href="{win_setup}"><img alt="Gaming laptop" height="42" src="{laptop}" /></a>
+
+          <sub>32 位版并不保证随每个版本发布，需要的话请往前移步翻几个版本找找。</sub>''')
 
           if files["mac"] or files["ios"] or files["linux_targz"]:
               parts.append("---")
