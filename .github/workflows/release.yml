@@ -566,8 +566,7 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
-  # 旁路：发布会等它跑完以便带上安装包，但成败不参与发布判断。
-  # 直接调用 Lab 仓库的 32 位工作流（检出的是本仓库代码），引擎和 ANGLE 从 Lab 的 Release 下载
+  # 旁路：发布会等它跑完以便带上安装包，但成败不参与发布判断
   win_x86:
     name: Windows x86
     needs: validate
