@@ -544,6 +544,7 @@ jobs:
         if: ${{ inputs.tag != '' }}
         shell: pwsh
         run: |
+          Copy-Item "windows/packaging/win32/Win7 跑不了？报错：参考方案！.txt" "Release/PiliBro-Win/"
           & $env:RAR_EXE a -ep1 -ma5 -m5 -s -md512m -r "PiliBro_windows_${{ env.version }}_x64_portable.rar" "Release/PiliBro-Win/*"
           if ($LASTEXITCODE -ne 0) {
             exit $LASTEXITCODE
@@ -765,7 +766,6 @@ jobs:
             --notes-file release_body.md \
             --draft \
             "${ASSETS[@]}"
-
           gh release edit "${TAG}" \
             --repo "ucxn/Bili.Libre.Speed" \
             --draft=false
