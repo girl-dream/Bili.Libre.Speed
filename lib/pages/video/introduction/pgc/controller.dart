@@ -1,3 +1,4 @@
+import 'package:PiliBro/common/widgets/dialog/qr_dialog.dart';
 import 'dart:async';
 import 'dart:math' show max;
 
@@ -120,6 +121,13 @@ class PgcIntroController extends CommonIntroController {
   @override
   int get copyright => 1;
 
+  void shareEpisode(String url) {
+    final item = pgcItem.episodes?.firstWhereOrNull((e) => e.epId == epId);
+    ShareUtils.shareText(
+      '${pgcItem.title}${item != null ? ' ${item.showTitle}' : ''} - $url',
+    );
+  }
+
   // 分享视频
   @override
   void actionShareVideo(BuildContext context) {
@@ -149,16 +157,17 @@ class PgcIntroController extends CommonIntroController {
             DialogOption(
               child: const Text('分享视频', style: TextStyle(fontSize: 14)),
               onPressed: () {
-                final item = pgcItem.episodes?.firstWhereOrNull(
-                  (item) => item.epId == epId,
-                );
                 Get.back();
-                ShareUtils.shareText(
-                  '${pgcItem.title}${item != null ? ' ${item.showTitle}' : ''}'
-                  ' - $videoUrl',
-                );
+                shareEpisode(videoUrl);
               },
             ),
+          DialogOption(
+            child: const Text('二维码分享', style: TextStyle(fontSize: 14)),
+            onPressed: () {
+              Get.back();
+              showQrDialog(context, data: videoUrl, title: pgcItem.title);
+            },
+          ),
           if (isLogin)
             DialogOption(
               child: const Text('分享至动态', style: TextStyle(fontSize: 14)),
