@@ -44,9 +44,10 @@ $\color{red}{\textsf{自定义进度条：}}$ 融合了B站原版、YouTube 两�
 ## 适配平台
 Android 手机、平板、TV（Arm/×86-64）、iOS（含iPad）、MacOS、Windows（AMD64 安装/绿色）、Linux。
 ### 完全支持
-Android 手机（API28+）；Windows 10（实机4070笔记本+7940HX集显均直通），  
+Android 手机（API28 + 64位）；Windows 10（实机4070笔记本+7940HX集显均直通），  
 Windows 11（老酷睿核显直通已测）：支持安装版和便携版，Win11 仅64位。
 #### 已支持
+优秀支持：<但非逐版测试> Android 旧手机（API 28-） Android 平板、Android 电视机/大屏/嵌入式/TV（及对应遥控操作逻辑）或 aarch32；  
 良好支持：Windows 7 64位（需要打补丁，虚拟机已测），Windows 8，Windows 8.1（实机+nVidia亮机卡已测，直通，需补丁）  
 普通支持：Linux（网友有反馈）、iOS（iPad测、不保证每版测）、Android 32位和×86_64、Android 电视机/盒子
 #### 试验性
