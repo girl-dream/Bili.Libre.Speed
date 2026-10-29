@@ -1,5 +1,4 @@
 import 'dart:io' show Platform;
-
 import 'package:PiliBro/plugin/pl_player/models/fullscreen_mode.dart';
 import 'package:PiliBro/plugin/pl_player/models/orientation_mode.dart';
 import 'package:PiliBro/plugin/pl_player/utils/fullscreen.dart';
@@ -32,7 +31,7 @@ final class OrientationPlan {
     required this.finalDirectionMask,
     required this.systemAutoRotate,
   });
-
+// 哥哥科技 版权所有 爱哥哥，也有个可爱的弟弟； https://github.com/ucxn/Bili.Libre.Speed
   final AppInitialOrientation appInitial;
   final AppRotationMode appRotation;
   final WindowedPlayerRotationMode windowedRotation;
@@ -200,36 +199,18 @@ final class BrotherOrientationPlan {
   int filterMask(int mask) => mask & effectiveFinalMask;
 }
 
-final class BrotherRuntimeInterpretation {
-  const BrotherRuntimeInterpretation({
-    required this.mode,
-    required this.executable,
-    required this.usesAppGravity,
-    required this.waitsForSourceChange,
-    required this.needsMetricsGuard,
-  });
-
-  final BrotherRuntimeMode mode;
-  final bool executable;
-  final bool usesAppGravity;
-  final bool waitsForSourceChange;
-  final bool needsMetricsGuard;
-}
-
 final class BrotherAppLatchInterpretation {
   const BrotherAppLatchInterpretation({
     required this.enabled,
     required this.edgeTriggered,
     required this.targetMask,
     required this.targetPhase,
-    required this.targetRuntime,
   });
 
   final bool enabled;
   final bool edgeTriggered;
   final int targetMask;
   final BrotherPhaseConfig targetPhase;
-  final BrotherRuntimeInterpretation targetRuntime;
 }
 
 abstract final class OrientationPolicy {
@@ -485,13 +466,10 @@ abstract final class OrientationPolicy {
     final windowed = Pref.brotherWindowedPhase;
     final fullscreen = Pref.brotherFullscreenPhase;
     bool usesGravity(BrotherPhaseConfig phase, {required bool appPhase}) =>
-        phase.possibleRuntimeModes.any(
-          (mode) => interpretBrotherRuntime(
-            phase.copyWith(runtimeMode: mode),
-            allowedMask: OrientationMask.all,
-            appPhase: appPhase,
-          ).usesAppGravity,
-        );
+        !appPhase &&
+        (phase.runtimeMode == BrotherRuntimeMode.appGravity ||
+            phase.resumePortraitRuntimeMode == BrotherRuntimeMode.appGravity ||
+            phase.resumeLandscapeRuntimeMode == BrotherRuntimeMode.appGravity);
     final gravityNeeded =
         usesGravity(app, appPhase: true) ||
         usesGravity(windowed, appPhase: false) ||
@@ -743,8 +721,7 @@ abstract final class OrientationPolicy {
         allowedMask == OrientationMask.landscapeRight ||
         allowedMask == OrientationMask.portrait ||
         allowedMask == OrientationMask.landscape ||
-        allowedMask == 13 ||
-        allowedMask == OrientationMask.all;
+        allowedMask == 13;
     return switch (phase.runtimeMode) {
       BrotherRuntimeMode.appGravity || BrotherRuntimeMode.locked => false,
       BrotherRuntimeMode.followSystemAllowed ||
@@ -754,47 +731,12 @@ abstract final class OrientationPolicy {
     };
   }
 
-  static BrotherRuntimeInterpretation interpretBrotherRuntime(
-    BrotherPhaseConfig phase, {
-    required int allowedMask,
-    required bool appPhase,
-  }) {
-    final executable =
-        !(appPhase && phase.runtimeMode == BrotherRuntimeMode.appGravity);
-    final active = executable && allowedMask != 0;
-    return BrotherRuntimeInterpretation(
-      mode: phase.runtimeMode,
-      executable: executable,
-      usesAppGravity:
-          active &&
-          !appPhase &&
-          phase.runtimeMode == BrotherRuntimeMode.appGravity,
-      waitsForSourceChange:
-          active &&
-          !appPhase &&
-          phase.runtimeActivation == BrotherRuntimeActivation.afterSourceChange &&
-          phase.runtimeMode != BrotherRuntimeMode.appGravity &&
-          phase.runtimeMode != BrotherRuntimeMode.inheritRequest &&
-          phase.runtimeMode != BrotherRuntimeMode.locked,
-      needsMetricsGuard:
-          active && brotherRuntimeNeedsGuard(phase, allowedMask),
-    );
-  }
-
   static BrotherAppLatchInterpretation interpretBrotherAppRuntimeLatch(
     BrotherPhaseConfig phase, {
     required int allowedMask,
   }) {
     final axis = phase.runtimeLatchAxis;
-    final targetPhase = phase.copyWith(
-      runtimeMode: phase.runtimeLatchMode,
-      runtimeLatchAxis: BrotherRuntimeLatchAxis.off,
-    );
-    final targetRuntime = interpretBrotherRuntime(
-      targetPhase,
-      allowedMask: allowedMask,
-      appPhase: true,
-    );
+    final targetMode = phase.runtimeLatchMode;
     final targetMask = axis == BrotherRuntimeLatchAxis.off
         ? 0
         : axis.targetsLandscape
@@ -804,12 +746,14 @@ abstract final class OrientationPolicy {
       enabled:
           allowedMask != 0 &&
           axis != BrotherRuntimeLatchAxis.off &&
-          phase.runtimeMode != phase.runtimeLatchMode &&
-          targetRuntime.executable,
+          phase.runtimeMode != targetMode &&
+          targetMode != BrotherRuntimeMode.appGravity,
       edgeTriggered: axis.edgeTriggered,
       targetMask: targetMask,
-      targetPhase: targetPhase,
-      targetRuntime: targetRuntime,
+      targetPhase: phase.copyWith(
+        runtimeMode: targetMode,
+        runtimeLatchAxis: BrotherRuntimeLatchAxis.off,
+      ),
     );
   }
 
@@ -819,12 +763,11 @@ abstract final class OrientationPolicy {
     bool appPhase = false,
   }) {
     if (!_brotherEnabled) return;
-    final runtime = interpretBrotherRuntime(
-      phase,
-      allowedMask: mask,
-      appPhase: appPhase,
-    );
-    _brotherGuard.update(runtime.needsMetricsGuard ? mask : 0);
+    final needsGuard =
+        mask != 0 &&
+        !(appPhase && phase.runtimeMode == BrotherRuntimeMode.appGravity) &&
+        brotherRuntimeNeedsGuard(phase, mask);
+    _brotherGuard.update(needsGuard ? mask : 0);
   }
 
   static Future<void> applyBrotherRuntime(
@@ -836,12 +779,9 @@ abstract final class OrientationPolicy {
       await lockedMode();
       return;
     }
-    final runtime = interpretBrotherRuntime(
-      phase,
-      allowedMask: allowedMask,
-      appPhase: appPhase,
-    );
-    if (!runtime.executable) return;
+    if (appPhase && phase.runtimeMode == BrotherRuntimeMode.appGravity) {
+      return;
+    }
     switch (phase.runtimeMode) {
       case BrotherRuntimeMode.inheritRequest:
       case BrotherRuntimeMode.appGravity:

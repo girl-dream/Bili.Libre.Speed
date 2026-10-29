@@ -141,25 +141,29 @@ abstract final class BrotherDiagnosticsCompiler {
     void addRuntime(BrotherRuntimeMode mode) {
       final candidate = phase.copyWith(runtimeMode: mode);
       for (final mask in masks) {
-        final interpreted = OrientationPolicy.interpretBrotherRuntime(
-          candidate,
-          allowedMask: mask,
-          appPhase: appPhase,
-        );
-        if (!interpreted.executable) {
-          notes.add('${mode.desc}：APP 普通页面不可用');
+        final active =
+            mask != 0 && !(appPhase && mode == BrotherRuntimeMode.appGravity);
+        if (!active) {
+          if (appPhase && mode == BrotherRuntimeMode.appGravity) {
+            notes.add('${mode.desc}：APP 主页/普通页不可用');
+          }
           continue;
         }
-        if (interpreted.usesAppGravity) {
+        if (!appPhase && mode == BrotherRuntimeMode.appGravity) {
           if (candidate.gravityFollowSystemLock && !plan.systemAutoRotate) {
             notes.add('${mode.desc}：系统旋转锁定已开启，改为锁定当前方向');
           } else {
             listeners |= BrotherDiagnosticListener.appGravity;
           }
         }
-        if (interpreted.waitsForSourceChange) {
+        if (!appPhase &&
+            candidate.runtimeActivation ==
+                BrotherRuntimeActivation.afterSourceChange &&
+            mode != BrotherRuntimeMode.appGravity &&
+            mode != BrotherRuntimeMode.inheritRequest &&
+            mode != BrotherRuntimeMode.locked) {
           if (!_supportsProposedRotation) {
-            notes.add('${mode.desc}：系统低于 Android 14，无法等待首次转动');
+            notes.add('${mode.desc}：系统低于 API 34，无法等待首次转动');
           } else if (mode == BrotherRuntimeMode.followSystemAllowed &&
               !plan.systemAutoRotate) {
             notes.add('${mode.desc}：系统旋转锁定已开启，不等待首次转动');
@@ -167,15 +171,25 @@ abstract final class BrotherDiagnosticsCompiler {
             listeners |= BrotherDiagnosticListener.proposedSystem;
           }
         }
-        if (interpreted.needsMetricsGuard) {
+        if (OrientationPolicy.brotherRuntimeNeedsGuard(candidate, mask)) {
           listeners |= BrotherDiagnosticListener.metrics;
         }
       }
     }
 
-    final runtimeModes = hasResume
-        ? phase.possibleRuntimeModes
-        : <BrotherRuntimeMode>[phase.runtimeMode];
+    final runtimeModes = <BrotherRuntimeMode>[phase.runtimeMode];
+    if (hasResume) {
+      final portraitMode = phase.resumePortraitRuntimeMode;
+      if (portraitMode != null && portraitMode != phase.runtimeMode) {
+        runtimeModes.add(portraitMode);
+      }
+      final landscapeMode = phase.resumeLandscapeRuntimeMode;
+      if (landscapeMode != null &&
+          landscapeMode != phase.runtimeMode &&
+          landscapeMode != portraitMode) {
+        runtimeModes.add(landscapeMode);
+      }
+    }
     for (final mode in runtimeModes) {
       addRuntime(mode);
     }
@@ -190,20 +204,10 @@ abstract final class BrotherDiagnosticsCompiler {
           );
           if (!interpreted.enabled) continue;
           latchListening = true;
-          final target = interpreted.targetRuntime;
-          if (target.usesAppGravity) {
-            listeners |= BrotherDiagnosticListener.appGravity;
-          }
-          if (target.waitsForSourceChange && _supportsProposedRotation) {
-            listeners |= BrotherDiagnosticListener.proposedSystem;
-          }
-          if (target.needsMetricsGuard) {
+          final target = interpreted.targetPhase;
+          if (target.runtimeMode != BrotherRuntimeMode.appGravity &&
+              OrientationPolicy.brotherRuntimeNeedsGuard(target, mask)) {
             listeners |= BrotherDiagnosticListener.metrics;
-          }
-          if (!target.executable) {
-            notes.add(
-              '${interpreted.targetPhase.runtimeMode.desc}：APP 普通页面不可用',
-            );
           }
         }
       }
@@ -253,15 +257,11 @@ abstract final class BrotherDiagnosticsCompiler {
   ) {
     final candidate = phase.copyWith(runtimeMode: mode);
     for (final mask in _possibleAllowedMasks(plan, phase)) {
-      if (OrientationPolicy.interpretBrotherRuntime(
-        candidate,
-        allowedMask: mask,
-        appPhase: appPhase,
-      ).executable) {
+      if (!(appPhase && mode == BrotherRuntimeMode.appGravity)) {
         return mode.desc;
       }
     }
-    return '${mode.desc}（APP 普通页面不可用）';
+    return '${mode.desc}（APP 常规页面不可用）';
   }
 
   static Set<int> _possibleAllowedMasks(
@@ -300,7 +300,7 @@ abstract final class BrotherDiagnosticsCompiler {
     if (mask == 0) return '无';
     if (mask == OrientationMask.all) return '全部';
     return [
-      if (mask & OrientationMask.portraitUp != 0) '正竖',
+      if (mask & OrientationMask.portraitUp != 0) '竖屏',
       if (mask & OrientationMask.portraitDown != 0) '倒竖',
       if (mask & OrientationMask.landscapeLeft != 0) '左横',
       if (mask & OrientationMask.landscapeRight != 0) '右横',
@@ -326,10 +326,10 @@ abstract final class BrotherOrientationDiagnostics {
 
     return [
       '【监听与开销】',
-      '重力传感器（持续采样，耗电最多）：${where(BrotherDiagnosticListener.appGravity)}',
-      '系统建议方向（Android 14 起，系统回调，开销很小）：${where(BrotherDiagnosticListener.proposedSystem)}',
+      '重力传感器（持续采样、耗电最多）：${where(BrotherDiagnosticListener.appGravity)}',
+      '系统建议方向（Android 14 起、系统回调，开销很小）：${where(BrotherDiagnosticListener.proposedSystem)}',
       '窗口尺寸变化（仅在屏幕旋转时回调，几乎无开销）：${where(BrotherDiagnosticListener.metrics)}',
-      '以上监听只在对应场景里启用，离开即注销，不轮询。',
+      '以上监听只在对应场景里启用、离开即注销：不轮询。',
       '',
       '【各生命周期】',
       for (final phase in snapshot.phases) ..._phaseLines(phase),
@@ -348,5 +348,4 @@ abstract final class BrotherOrientationDiagnostics {
     '  允许方向：${phase.allowed}',
     if (phase.latch != null) '  一次性切换：${phase.latch}',
     for (final note in phase.notes) '  注意：$note',
-  ];
-}
+  ];}

@@ -54,7 +54,7 @@ enum FullScreenAllowedOrientation {
   landscape('仅横屏'),
   portrait('仅竖屏'),
   entryAxis('只允许进入时那一轴（同为横或同为竖）'),
-  entryExact('只允许进入时那一个方向');
+  entryExact('只允许进入时精确那个方向');
 
   final String desc;
   const FullScreenAllowedOrientation(this.desc);
@@ -189,9 +189,9 @@ enum BrotherRuntimeMode {
   userPortrait('竖屏，旋转锁定关闭时可切换正倒竖屏（USER_PORTRAIT）'),
   fullUser('跟随系统旋转锁定，四向旋转（FULL_USER）'),
   locked('锁定当前方向（LOCKED）'),
-  followSystemAllowed('跟随系统旋转锁定，限于允许方向'),
-  alwaysAutoAllowed('忽略系统旋转锁定，限于允许方向'),
-  systemGate('只看系统旋转锁定：开启时锁定，关闭时四向旋转'),
+  followSystemAllowed('跟随系统旋转锁定，限于最终许可'),
+  alwaysAutoAllowed('忽略系统旋转锁定，限于最终许可'),
+  systemGate('只读系统旋转开关：开启时锁定，关闭时四向旋转'),
   appGravity('由 APP 重力传感器控制');
 
   final String desc;
@@ -207,9 +207,9 @@ enum BrotherRuntimeActivation {
 }
 
 enum BrotherAllowedBasis {
-  fixed('固定方向（在下一项中选择）'),
-  entryAxis('与进入时同轴（同为横或同为竖）'),
-  entryExact('仅限进入时的方向');
+  fixed('固定允许的方向（手工选择）'),
+  entryAxis('与进入时同大方向'),
+  entryExact('仅限进入时具体方向');
 
   final String desc;
   const BrotherAllowedBasis(this.desc);
@@ -325,17 +325,6 @@ final class BrotherPhaseConfig {
     return selected == runtimeMode ? this : copyWith(runtimeMode: selected);
   }
 
-  Iterable<BrotherRuntimeMode> get possibleRuntimeModes sync* {
-    yield runtimeMode;
-    final portrait = resumePortraitRuntimeMode;
-    if (portrait != null && portrait != runtimeMode) yield portrait;
-    final landscape = resumeLandscapeRuntimeMode;
-    if (landscape != null &&
-        landscape != runtimeMode &&
-        landscape != portrait) {
-      yield landscape;
-    }
-  }
 
   List<Object> toStorage() => [
     enterAction.index,
@@ -352,80 +341,26 @@ final class BrotherPhaseConfig {
     runtimeLatchMode.index,
   ];
 
-  static BrotherPhaseConfig fromStorage(
-    Object? raw, {
-    required BrotherPhaseConfig fallback,
-  }) {
-    if (raw is! List || raw.length < 7) return fallback;
-    T value<T extends Enum>(List<T> values, Object? index, T orElse) =>
-        index is int && index >= 0 && index < values.length
-            ? values[index]
-            : orElse;
-    final v2 = raw.length >= 8;
-    final v3 = raw.length >= 12;
-    BrotherRuntimeMode? nullableRuntime(Object? index) =>
-        index is int &&
-            index >= 0 &&
-            index < BrotherRuntimeMode.values.length
-        ? BrotherRuntimeMode.values[index]
-        : null;
+  static BrotherPhaseConfig fromStorage(List raw) {
+    final resumePortrait = raw[8] as int;
+    final resumeLandscape = raw[9] as int;
     return BrotherPhaseConfig(
-      enterAction: value(
-        BrotherDirectionAction.values,
-        raw[0],
-        fallback.enterAction,
-      ),
-      resumeAction: value(
-        BrotherDirectionAction.values,
-        raw[1],
-        fallback.resumeAction,
-      ),
-      runtimeMode: value(
-        BrotherRuntimeMode.values,
-        raw[2],
-        fallback.runtimeMode,
-      ),
-      runtimeActivation: v2
-          ? value(
-              BrotherRuntimeActivation.values,
-              raw[3],
-              fallback.runtimeActivation,
-            )
-          : fallback.runtimeActivation,
-      allowedBasis: value(
-        BrotherAllowedBasis.values,
-        raw[v2 ? 4 : 3],
-        fallback.allowedBasis,
-      ),
-      allowedMask: raw[v2 ? 5 : 4] is int
-          ? raw[v2 ? 5 : 4] as int
-          : fallback.allowedMask,
-      gravityFollowSystemLock: raw[v2 ? 6 : 5] is bool
-          ? raw[v2 ? 6 : 5] as bool
-          : fallback.gravityFollowSystemLock,
-      angleDegrees: raw[v2 ? 7 : 6] is int
-          ? raw[v2 ? 7 : 6] as int
-          : fallback.angleDegrees,
-      resumePortraitRuntimeMode: v3
-          ? nullableRuntime(raw[8])
-          : fallback.resumePortraitRuntimeMode,
-      resumeLandscapeRuntimeMode: v3
-          ? nullableRuntime(raw[9])
-          : fallback.resumeLandscapeRuntimeMode,
-      runtimeLatchAxis: v3
-          ? value(
-              BrotherRuntimeLatchAxis.values,
-              raw[10],
-              fallback.runtimeLatchAxis,
-            )
-          : fallback.runtimeLatchAxis,
-      runtimeLatchMode: v3
-          ? value(
-              BrotherRuntimeMode.values,
-              raw[11],
-              fallback.runtimeLatchMode,
-            )
-          : fallback.runtimeLatchMode,
+      enterAction: BrotherDirectionAction.values[raw[0] as int],
+      resumeAction: BrotherDirectionAction.values[raw[1] as int],
+      runtimeMode: BrotherRuntimeMode.values[raw[2] as int],
+      runtimeActivation: BrotherRuntimeActivation.values[raw[3] as int],
+      allowedBasis: BrotherAllowedBasis.values[raw[4] as int],
+      allowedMask: raw[5] as int,
+      gravityFollowSystemLock: raw[6] as bool,
+      angleDegrees: raw[7] as int,
+      resumePortraitRuntimeMode: resumePortrait == -1
+          ? null
+          : BrotherRuntimeMode.values[resumePortrait],
+      resumeLandscapeRuntimeMode: resumeLandscape == -1
+          ? null
+          : BrotherRuntimeMode.values[resumeLandscape],
+      runtimeLatchAxis: BrotherRuntimeLatchAxis.values[raw[10] as int],
+      runtimeLatchMode: BrotherRuntimeMode.values[raw[11] as int],
     );
   }
 }

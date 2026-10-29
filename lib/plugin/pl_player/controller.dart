@@ -1751,8 +1751,8 @@ class PlPlayerController
   }
 
   List<StreamSubscription>? _subscriptions;
-  final Set<ValueChanged<Duration>> _positionListeners = {};
-  final Set<ValueChanged<Duration>> _rawPositionListeners = {};
+  final List<ValueChanged<Duration>> _positionListeners = [];
+  ValueChanged<Duration>? _rawPositionListener;
   final Set<ValueChanged<PlayerStatus>> _statusListeners = {};
 
   Timer? _wakeLockTimer;
@@ -1860,9 +1860,7 @@ class PlPlayerController
           PlaybackStatsService.samplePosition(position);
         }
 
-        for (final element in _rawPositionListeners) {
-          element(position);
-        }
+        _rawPositionListener?.call(position);
 
         final positionUs = position.inMicroseconds;
         final lastSecond = _lastPositionEventSecond;
@@ -2599,11 +2597,6 @@ class PlPlayerController
       phase,
       entryDirectionBit: entryDirectionBit,
     );
-    final runtimeInterpretation = OrientationPolicy.interpretBrotherRuntime(
-      runtimePhase,
-      allowedMask: _brotherAllowedMask,
-      appPhase: false,
-    );
     OrientationPolicy.setBrotherActiveAllowedMask(
       _brotherAllowedMask,
       runtimePhase,
@@ -2614,7 +2607,7 @@ class PlPlayerController
       return;
     }
 
-    if (runtimeInterpretation.usesAppGravity) {
+    if (runtimePhase.runtimeMode == BrotherRuntimeMode.appGravity) {
       if (runtimePhase.gravityFollowSystemLock && !_brotherPlan.systemAutoRotate) {
         await lockedMode();
         _updateOrientationInputs();
@@ -2629,7 +2622,10 @@ class PlPlayerController
       return;
     }
 
-    if (runtimeInterpretation.waitsForSourceChange) {
+    if (runtimePhase.runtimeActivation == BrotherRuntimeActivation.afterSourceChange &&
+        runtimePhase.runtimeMode != BrotherRuntimeMode.appGravity &&
+        runtimePhase.runtimeMode != BrotherRuntimeMode.inheritRequest &&
+        runtimePhase.runtimeMode != BrotherRuntimeMode.locked) {
       if (!_supportsProposedRotation) {
         _updateOrientationInputs();
         return;
@@ -2662,13 +2658,8 @@ class PlPlayerController
       return;
     }
 
-    final runtimeInterpretation = OrientationPolicy.interpretBrotherRuntime(
-      phase,
-      allowedMask: _brotherAllowedMask,
-      appPhase: false,
-    );
 
-    if (runtimeInterpretation.usesAppGravity) {
+    if (phase.runtimeMode == BrotherRuntimeMode.appGravity) {
       if (phase.gravityFollowSystemLock && !_brotherPlan.systemAutoRotate) {
         await lockedMode();
         _updateOrientationInputs();
@@ -2683,7 +2674,10 @@ class PlPlayerController
       return;
     }
 
-    if (runtimeInterpretation.waitsForSourceChange) {
+    if (phase.runtimeActivation == BrotherRuntimeActivation.afterSourceChange &&
+        phase.runtimeMode != BrotherRuntimeMode.appGravity &&
+        phase.runtimeMode != BrotherRuntimeMode.inheritRequest &&
+        phase.runtimeMode != BrotherRuntimeMode.locked) {
       if (!_supportsProposedRotation) {
         _updateOrientationInputs();
         return;
@@ -2896,19 +2890,25 @@ class PlPlayerController
 
   void addPositionListener(ValueChanged<Duration> listener) {
     if (_playerCount == 0) return;
-    _positionListeners.add(listener);
+    if (!_positionListeners.contains(listener)) {
+      _positionListeners.add(listener);
+    }
   }
 
-  void removePositionListener(ValueChanged<Duration> listener) =>
-      _positionListeners.remove(listener);
+  void removePositionListener(ValueChanged<Duration> listener) {
+    _positionListeners.remove(listener);
+  }
 
   void addRawPositionListener(ValueChanged<Duration> listener) {
     if (_playerCount == 0) return;
-    _rawPositionListeners.add(listener);
+    _rawPositionListener = listener;
   }
 
-  void removeRawPositionListener(ValueChanged<Duration> listener) =>
-      _rawPositionListeners.remove(listener);
+  void removeRawPositionListener(ValueChanged<Duration> listener) {
+    if (identical(_rawPositionListener, listener)) {
+      _rawPositionListener = null;
+    }
+  }
 
   void addStatusLister(ValueChanged<PlayerStatus> listener) {
     if (_playerCount == 0) return;
@@ -3084,7 +3084,7 @@ class PlPlayerController
 
     _removeListeners();
     _positionListeners.clear();
-    _rawPositionListeners.clear();
+    _rawPositionListener = null;
     _statusListeners.clear();
     _stopWakeLockTimer();
     WakelockPlus.disable();
