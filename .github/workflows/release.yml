@@ -607,7 +607,6 @@ jobs:
       - name: Download release assets
         uses: actions/download-artifact@v8
         with:
-          pattern: release-*
           path: release-assets
           merge-multiple: true
 
