@@ -1,3 +1,4 @@
+import 'package:PiliBro/common/widgets/dialog/qr_dialog.dart';
 import 'dart:async';
 import 'dart:io' show File, Platform;
 
@@ -757,7 +758,7 @@ class AudioController extends GetxController
 
   void actionShareVideo(BuildContext context) {
     final audioUrl = isUgc
-        ? '${HttpString.baseUrl}/video/av$oid'
+        ? ShareUtils.videoUrl('av$oid')
         : '${HttpString.baseUrl}/audio/au$oid';
     showDialog(
       context: context,
@@ -788,14 +789,21 @@ class AudioController extends GetxController
                   :final arc,
                   :final owner,
                 )) {
-                  ShareUtils.shareText(
-                    '${arc.title} '
-                    'UP主: ${owner.name}'
-                    ' - $audioUrl',
-                  );
+                  ShareUtils.shareVideo(arc.title, owner.name, audioUrl);
                 }
               },
             ),
+          DialogOption(
+            child: const Text('二维码分享', style: TextStyle(fontSize: 14)),
+            onPressed: () {
+              Get.back();
+              showQrDialog(
+                context,
+                data: audioUrl,
+                title: audioItem.value?.arc.title,
+              );
+            },
+          ),
           if (isLogin)
             DialogOption(
               child: const Text('分享至动态', style: TextStyle(fontSize: 14)),

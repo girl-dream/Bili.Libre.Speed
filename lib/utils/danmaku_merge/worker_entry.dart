@@ -27,6 +27,12 @@ void danmakuMergeWorkerMain(List<Object?> args) {
   final pinyinEncoder = DanmakuPinyinEncoder.withDictionaryContent(dictContent);
   final preparedTextCache = <String, DanmakuPreparedText>{};
 
+  DanmakuPreparedText prepareCachedText(String text) =>
+      preparedTextCache.putIfAbsent(
+        text,
+        () => DanmakuClusterer.prepareText(text, pinyinEncoder),
+      );
+
   receivePort.listen((message) {
     if (message is! Map<Object?, Object?>) {
       return;
@@ -47,24 +53,21 @@ void danmakuMergeWorkerMain(List<Object?> args) {
     if (kDebugMode) {
       debugPrint(
         '[DanmakuMergeWorker:Isolate] run task=${task.taskId} '
-        'segment=${task.segmentIndex} current=${task.currentSegment.length} '
-        'next=${task.nextSegmentPrefix.length}',
+        'segment=${task.segmentIndex}',
       );
     }
     try {
+      final currentBytes = task.currentSegment.materialize().asUint8List();
+      final nextBytes = task.nextSegmentPrefix.materialize().asUint8List();
       final clusterer = DanmakuClusterer(
         config: task.config,
         pinyinEncoder: pinyinEncoder,
-        prepareText: (text) => preparedTextCache.putIfAbsent(
-          text,
-          () => DanmakuClusterer.prepareText(text, pinyinEncoder),
-        ),
+        prepareText: prepareCachedText,
       );
       final merged = clusterer.mergeSegment(
         segmentIndex: task.segmentIndex,
-        currentSegment: DmSegMobileReply.fromBuffer(task.currentSegment).elems,
-        nextSegmentPrefix:
-            DmSegMobileReply.fromBuffer(task.nextSegmentPrefix).elems,
+        currentSegment: DmSegMobileReply.fromBuffer(currentBytes).elems,
+        nextSegmentPrefix: DmSegMobileReply.fromBuffer(nextBytes).elems,
       );
       if (kDebugMode) {
         debugPrint(
@@ -73,12 +76,13 @@ void danmakuMergeWorkerMain(List<Object?> args) {
           'textCache=${preparedTextCache.length}',
         );
       }
+      final mergedBytes =
+          (DmSegMobileReply()..elems.addAll(merged)).writeToBuffer();
       sendPort.send(
         DanmakuMergeResultPayload(
           taskId: task.taskId,
           segmentIndex: task.segmentIndex,
-          mergedSegment:
-              (DmSegMobileReply()..elems.addAll(merged)).writeToBuffer(),
+          mergedSegment: TransferableTypedData.fromList([mergedBytes]),
         ).toMessage(),
       );
     } catch (error, stackTrace) {

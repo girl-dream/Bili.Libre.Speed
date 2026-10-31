@@ -37,6 +37,9 @@ abstract final class SettingBoxKey {
       hwdecWatchSeconds = 'hwdecWatchSeconds',
       p1080 = 'p1080',
       enableAutoEnter = 'enableAutoEnter',
+      autoFullscreenMode = 'autoFullscreenMode',
+      relatedAutoFullscreenMode = 'relatedAutoFullscreenMode',
+      relatedBackRestore = 'relatedBackRestore',
       enableAutoExit = 'enableAutoExit',
       enableOnlineTotal = 'enableOnlineTotal',
       superChatType = 'superChatType',
@@ -157,6 +160,7 @@ abstract final class SettingBoxKey {
       rcmdSources = 'rcmdSources',
       rcmdPersonalized = 'rcmdPersonalized',
       rcmdAnonymous = 'rcmdAnonymous',
+      rcmdReportClick = 'rcmdReportClick',
       rcmdInterestDone = 'rcmdInterestDone',
       webRcmdPs = 'webRcmdPs',
       webRcmdFreshType = 'webRcmdFreshType',
@@ -254,6 +258,13 @@ abstract final class SettingBoxKey {
       quickFavId = 'quickFavId',
       showFsScreenshotBtn = 'showFsScreenshotBtn',
       showFsLockBtn = 'showFsLockBtn',
+      headerBtnHome = 'headerBtnHome',
+      headerBtnMiniWindow = 'headerBtnMiniWindow',
+      headerBtnListen = 'headerBtnListen',
+      headerBtnCast = 'headerBtnCast',
+      headerBtnSponsor = 'headerBtnSponsor',
+      headerBtnDmSettings = 'headerBtnDmSettings',
+      headerBtnPip = 'headerBtnPip',
       silentDownImg = 'silentDownImg',
       showMemberShop = 'showMemberShop',
       enablePlayAll = 'enablePlayAll',
@@ -413,7 +424,8 @@ abstract final class LocalCacheKey {
       updateIgnore = 'updateIgnore',
       launchSlot = 'launchSlot',
       launchDay = 'launchDay',
-      launchYears = 'launchYears';
+      launchYears = 'launchYears',
+      pcChecked = 'pcChecked';
 }
 
 abstract final class VideoBoxKey {

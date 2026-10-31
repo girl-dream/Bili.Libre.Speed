@@ -43,6 +43,24 @@ $\color{red}{\textsf{自定义进度条：}}$ 融合了B站原版、YouTube 两�
 
 ## 适配平台
 Android 手机、平板、TV（Arm/×86-64）、iOS（含iPad）、MacOS、Windows（AMD64 安装/绿色）、Linux。
+### 完全支持
+Android 手机（API28 + 64位）；Windows 10（实机4070笔记本+7940HX集显均直通），  
+Windows 11（老酷睿核显直通已测）：支持安装版和便携版，Win11 仅64位。
+#### 已支持
+优秀支持：<但非逐版测试> Android 旧手机（API 28-） Android 平板、Android 电视机/大屏/嵌入式/TV（及对应遥控操作逻辑）或 aarch32；  
+良好支持：Windows 7 64位（需要打补丁，虚拟机已测），Windows 8，Windows 8.1（实机+nVidia亮机卡已测，直通，需补丁）  
+普通支持：Linux（网友有反馈）、iOS（iPad测、不保证每版测）、Android 32位和×86_64、Android 电视机/盒子
+#### 试验性
+32位 Windows平台：所有 i686（×86_32位），这是JIT，因为Flutter的工程限制；Win10以下仍需打补丁；  
+Windows 10 以下（不含10），可尝试 [VxKex-NEXT](https://github.com/YuZhouRen86/VxKex-NEXT) 方案（勿随意在公司/生产/有SLA环境使用）。
+#### 未测试
+Windows XP 64位（小众），常见SP1的32位（未测[VxKex-FULL-Kernel](https://github.com/mananpa4/VxKex-FULL-Kernel)，且XP本身三方补丁就多、原版相对用得少）  
+MacOS Intel和自研M芯片机型均未测。
+### 具体来说：
+#### 经常使用
+Android 手机（16/16+，每天）、Windows 10 AMD64（频繁）
+#### 偶尔使用
+iOS、Android JIT Debug版
 
 ## 🔗 友情链接
 小米 中兴 TP 华硕 华为 H3C 腾达 路由器 Web UI 增强测量组件&emsp;

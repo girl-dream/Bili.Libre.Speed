@@ -540,10 +540,16 @@ jobs:
             Move-Item $_.FullName "PiliBro-Win-Setup/PiliBro_windows_${{ env.version }}_x64_setup.exe"
           }
 
+      - name: Portable uses generic x86_64 libmpv
+        if: ${{ inputs.tag != '' }}
+        shell: pwsh
+        run: lib/scripts/portable_generic_libmpv.ps1 Release/PiliBro-Win
+
       - name: Compress portable RAR
         if: ${{ inputs.tag != '' }}
         shell: pwsh
         run: |
+          Copy-Item "windows/packaging/win32/Win7 跑不了？报错：参考方案！.txt" "Release/PiliBro-Win/"
           & $env:RAR_EXE a -ep1 -ma5 -m5 -s -md512m -r "PiliBro_windows_${{ env.version }}_x64_portable.rar" "Release/PiliBro-Win/*"
           if ($LASTEXITCODE -ne 0) {
             exit $LASTEXITCODE
@@ -606,7 +612,6 @@ jobs:
       - name: Download release assets
         uses: actions/download-artifact@v8
         with:
-          pattern: release-*
           path: release-assets
           merge-multiple: true
 
@@ -680,15 +685,15 @@ jobs:
           a64 = asset_url("android_arm64")
           a7 = asset_url("android_armv7")
           ax86 = asset_url("android_x86")
-          parts.append(f'''[安卓版下载]({a64})（适用于 Arm V8 的绝大多数安卓手机）
+          parts.append(f'''[安卓版下载]({a64})【推荐】（适用于 Arm V8 的绝大多数安卓手机）
 
           [![Android](https://img.shields.io/badge/Android-3DDC84?style=for-the-badge&logo=android&logoColor=white)]({a64}) [![立即下载](https://img.shields.io/badge/立即下载-推荐版本-FF4D4F?style=for-the-badge&logoColor=white)]({a64})
 
-          Arm V7 老安卓[手机版下载]({a7})
+          Arm V7 老安卓[手机版下载]({a7})（少见，只有远古手机才用）
 
           [![Android](https://img.shields.io/badge/安卓-3DDC84?style=for-the-badge&logo=android&logoColor=white)]({a7}) [![ARMv7](https://img.shields.io/badge/ARMv7-0A84FF?style=for-the-badge&logo=arm&logoColor=white)]({a7}) [![下载](https://img.shields.io/badge/下载-旧设备适用-666666?style=for-the-badge&logoColor=white)]({a7})
 
-          安卓 x86 [版本下载]({ax86})
+          安卓 x86 [版本下载]({ax86})（极小众、小白勿用）
 
           [![Intel icon](https://img.shields.io/badge/%20-0071C5?style=for-the-badge&logo=intel&logoColor=white)]({ax86}) [![Android x86](https://img.shields.io/badge/Android-x86版本-3DDC84?style=for-the-badge&logo=android&logoColor=white)]({ax86})''')
 
@@ -700,10 +705,10 @@ jobs:
               # 有 32 位包：老 Windows 徽标让给 32 位那一行，64 位只留两个图标
               win_x86 = asset_url("windows_x86")
               desktop = f"https://raw.githubusercontent.com/ucxn/Bili.Libre.Speed/dev/.vscode/desktop.svg"
-              parts.append(f'''Windows x86_64 [下载]({win_setup})
+              parts.append(f'''Windows 【64位】 [下载]({win_setup})（推荐、优选）
 
           [![AMD](https://img.shields.io/badge/%20-ED1C24?style=for-the-badge&logo=amd&logoColor=white&logoSize=auto)]({win_portable}) <a href="{win_setup}"><img alt="Gaming laptop" height="42" src="{laptop}" /></a>''')
-              parts.append(f'''Windows x86_32 位 [下载]({win_x86})（老电脑、32 位系统用；Win7 请看压缩包里的说明）
+              parts.append(f'''Windows x86（32 位） [下载]({win_x86})（仅在老电脑且 32位系统 才用；Win7 请看压缩包里的说明）
 
           <a href="{win_x86}"><img alt="Windows" height="28" src="{win_logo}" /></a> <a href="{win_x86}"><img alt="Old desktop" height="42" src="{desktop}" /></a>''')
           else:
@@ -711,7 +716,7 @@ jobs:
 
           <a href="{win_setup}"><img alt="Windows" height="28" src="{win_logo}" /></a> [![AMD](https://img.shields.io/badge/%20-ED1C24?style=for-the-badge&logo=amd&logoColor=white&logoSize=auto)]({win_portable}) <a href="{win_setup}"><img alt="Gaming laptop" height="42" src="{laptop}" /></a>
 
-          <sub>32位版 并不保证随每个版本发布，需要的话请往前移步翻几个版本找找。</sub>''')
+          <sub>32位版 并不保证随每个版本发布，需要的话请往前移步翻几个版本找找。注意，Win7 64位本身可以用64位版本，只是需要打补丁，这和32位版本是两个不同的命题。</sub>''')
 
           if files["mac"] or files["ios"] or files["linux_targz"]:
               parts.append("---")
@@ -765,7 +770,6 @@ jobs:
             --notes-file release_body.md \
             --draft \
             "${ASSETS[@]}"
-
           gh release edit "${TAG}" \
             --repo "ucxn/Bili.Libre.Speed" \
             --draft=false

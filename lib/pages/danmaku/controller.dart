@@ -120,6 +120,8 @@ class PlDanmakuController {
   // 合并一段需要它的后继段（簇会跨段），所以先存原始数据，后继到了再合并。
   // 空段也要入表：它是"后继已就绪"的信号
   void _storeRaw(int segmentIndex, List<DanmakuElem> elems) {
+    // 页面关了才回来的请求：合并线程已关，不能再把它拉起来
+    if (_disposed) return;
     if (_isLogin) {
       for (final element in elems) {
         element.isSelf = element.midHash == _plPlayerController.midHash;
@@ -136,14 +138,19 @@ class PlDanmakuController {
     final current = _rawSeg[segmentIndex];
     if (current == null || _mergeStarted.contains(segmentIndex)) return;
     final next = _rawSeg[segmentIndex + 1];
+    // 后继段已合并完、原始数据已释放时不再等它，否则往回拖进没加载过的段会一直等
     if (!force &&
         next == null &&
+        !_mergeStarted.contains(segmentIndex + 1) &&
         !_isFileSource &&
         segmentIndex != _lastSegment) {
       return;
     }
     _mergeStarted.add(segmentIndex);
-    if (current.isEmpty) return;
+    if (current.isEmpty) {
+      _rawSeg.remove(segmentIndex);
+      return;
+    }
 
     var lastProgress = 0;
     for (final element in current) {
@@ -164,6 +171,8 @@ class PlDanmakuController {
     } catch (e, s) {
       Utils.reportError(e, s);
       if (!_disposed) handleDanmaku(current);
+    } finally {
+      _rawSeg.remove(segmentIndex);
     }
   }
 
@@ -173,7 +182,7 @@ class PlDanmakuController {
     final filters = _plPlayerController.filters;
     final shouldFilter = filters.count != 0;
     for (final element in elems) {
-      if (_isLogin) {
+      if (_isLogin && !_mergeDanmaku) {
         element.isSelf = element.midHash == _plPlayerController.midHash;
       }
 

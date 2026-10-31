@@ -23,13 +23,6 @@ class DanmakuSimilarityMatcher {
 
     final sourceText = source.prepared;
     final targetText = target.prepared;
-    if (sourceText.normalizedText == targetText.normalizedText) {
-      return const DanmakuSimilarityMatchResult(
-        reason: DanmakuMergeReason.exact,
-        distance: 0,
-      );
-    }
-
     final lenSum = sourceText.charLength + targetText.charLength;
     int? charDist;
     if ((sourceText.charLength - targetText.charLength).abs() <=
@@ -79,12 +72,11 @@ class DanmakuSimilarityMatcher {
     return null;
   }
 
-  static List<int> buildGramTokens(String text) {
-    if (text.isEmpty) {
+  static List<int> buildGramTokens(List<int> runes) {
+    if (runes.isEmpty) {
       return const <int>[];
     }
 
-    final runes = text.runes.toList(growable: false);
     final grams = <int>[];
     var previous = runes.last % _hashMod;
     for (final rune in runes) {

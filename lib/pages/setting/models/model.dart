@@ -237,6 +237,7 @@ SettingsModel getBanWordModel({
             void addKeyword() {
               final text = textController.text.trim();
               if (text.isEmpty || keywords.contains(text)) {
+                SmartDialog.showToast('关键词为空或已存在');
                 return;
               }
               setDialogState(() {
@@ -245,6 +246,7 @@ SettingsModel getBanWordModel({
               });
             }
             return AlertDialog(
+              scrollable: true,
               constraints: Style.dialogFixedConstraints,
               title: Text(title),
               content: Column(

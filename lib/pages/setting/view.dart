@@ -9,6 +9,7 @@ import 'package:PiliBro/pages/brotech/view.dart';
 import 'package:PiliBro/pages/about/view.dart';
 import 'package:PiliBro/pages/login/controller.dart';
 import 'package:PiliBro/pages/setting/common_setting.dart';
+import 'package:PiliBro/pages/setting/pc_check.dart';
 import 'package:PiliBro/pages/setting/tv_remote_setup.dart';
 import 'package:PiliBro/pages/setting/widgets/multi_select_dialog.dart';
 import 'package:PiliBro/pages/webdav/view.dart';
@@ -60,7 +61,7 @@ class _SettingPageState extends State<SettingPage> {
     ),
     _SettingsModel(
       type: SettingType.videoSetting,
-      subtitle: '画质、音质、解码、缓冲、音频输出等',
+      subtitle: '画质、音质、解码、缓冲、音频输出等，推荐用首页『音画设置』',
       icon: Icon(Icons.video_settings_outlined),
     ),
     _SettingsModel(
@@ -188,9 +189,9 @@ class _SettingPageState extends State<SettingPage> {
           ListTile(
             onTap: () => TvRemoteSetup.showMenu(context),
             leading: const Icon(Icons.tv_outlined),
-            title: Text('电视机快速登录与遥控器配置', style: titleStyle),
+            title: Text('手机、电视登录与遥控器🛠安卓通用快速配置', style: titleStyle),
             subtitle: Text(
-              '折叠屏、大平板等特殊屏幕配置，屏幕方向校准，登录、设置导出',
+              '折叠屏、大平板、TV等特殊屏幕配置，屏幕方向校准，登录、设置导出，视频卡顿、快速切换解码器，手机平板Android🧰工具箱',
               style: subTitleStyle,
             ),
           ),
@@ -198,9 +199,19 @@ class _SettingPageState extends State<SettingPage> {
           ListTile(
             onTap: () => Get.to(() => const DesktopIconPage()),
             leading: const Icon(Icons.apps_outlined),
-            title: Text('桌面图标', style: titleStyle),
+            title: Text('📱桌面图标', style: titleStyle),
             subtitle: Text(
               '选择内置图标或添加自定义桌面快捷方式',
+              style: subTitleStyle,
+            ),
+          ),
+        if (Platform.isWindows)
+          ListTile(
+            onTap: PcCheck.show,
+            leading: const Icon(Icons.memory_outlined),
+            title: Text('💻电脑位宽与视频流畅度诊断', style: titleStyle),
+            subtitle: Text(
+              '系统和程序是否都是 64 位、CPU 能否直接用自带的播放内核、当前显卡',
               style: subTitleStyle,
             ),
           ),
@@ -247,7 +258,7 @@ class _SettingPageState extends State<SettingPage> {
         ListTile(
           onTap: () => Get.to(() => const BroTechPage()),
           leading: Icon(MdiIcons.routerWireless),
-          title: Text('路由器高级统计与增强', style: titleStyle),
+          title: Text('路由器高级统计与增强（Bro-Stat）', style: titleStyle),
         ),
       ],
     );

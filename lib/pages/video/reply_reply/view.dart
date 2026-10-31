@@ -78,7 +78,14 @@ class VideoReplyReplyPanel extends CommonSlidePage {
               tooltip: '前往',
               onPressed: uri == null
                   ? null
-                  : () => PiliScheme.routePush(uri, businessId: type),
+                  : () => PiliScheme.routePush(
+                      uri,
+                      businessId: type,
+                      parameters: {
+                        'replyRootId': rootId,
+                        if (rpId != null) 'replyId': rpId,
+                      },
+                    ),
               icon: const Icon(Icons.open_in_browser),
             ),
           ],

@@ -29,7 +29,7 @@ List<SettingsModel> get audioSettings => [
   NormalModel(
     onTap: (context, setState) => Get.toNamed('/gestureSettings'),
     leading: const Icon(Icons.swipe_outlined),
-    title: '手势',
+    title: '手势、播放器区域',
     subtitle: '上下、左右滑动的分区与动作：亮度、音量、倍速、进度、全屏',
   ),
   const SwitchModel(
@@ -42,7 +42,7 @@ List<SettingsModel> get audioSettings => [
   ),
   const SwitchModel(
     title: '返回时自动进入应用内小窗',
-    subtitle: '视频播放中按返回，视频缩成可拖动、可缩放的悬浮小窗，点小窗无缝回到视频页；暂停时照常退出。视频页头部的小窗按钮始终可用',
+    subtitle: '视频播放中按返回，视频缩成可拖动、可缩放的悬浮小窗，点小窗无缝回到视频页；暂停时照常退出。双指捏合或滚轮调大小，双击切换三档大小',
     leading: Icon(Icons.picture_in_picture_alt_outlined),
     setKey: SettingBoxKey.enableInAppPip,
     defaultVal: false,
@@ -143,7 +143,7 @@ class AudioSettingsPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final settings = audioSettings;
     return SimpleScaffold(
-      appBar: AppBar(title: const Text('特色播放')),
+      appBar: AppBar(title: const Text('特色播放~ 哥哥的播放器工具箱')),
       body: ListView.builder(
         padding: EdgeInsets.only(
           bottom: MediaQuery.viewPaddingOf(context).bottom + 100,

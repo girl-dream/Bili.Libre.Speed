@@ -51,12 +51,14 @@ import 'package:PiliBro/pages/video/post_panel/view.dart';
 import 'package:PiliBro/pages/video/send_danmaku/view.dart';
 import 'package:PiliBro/pages/video/widgets/header_control.dart';
 import 'package:PiliBro/plugin/pl_player/controller.dart';
+import 'package:PiliBro/plugin/pl_player/models/auto_fullscreen_mode.dart';
 import 'package:PiliBro/plugin/pl_player/models/data_source.dart';
 import 'package:PiliBro/plugin/pl_player/models/heart_beat_type.dart';
 import 'package:PiliBro/plugin/pl_player/models/play_status.dart';
 import 'package:PiliBro/services/download/download_service.dart';
 import 'package:PiliBro/services/cdn_last_video_service.dart';
 import 'package:PiliBro/services/playback_stats_service.dart';
+import 'package:PiliBro/services/rcmd_report.dart';
 import 'package:PiliBro/utils/accounts.dart';
 import 'package:PiliBro/utils/audio_first_mode.dart';
 import 'package:PiliBro/utils/extension/context_ext.dart';
@@ -492,8 +494,8 @@ class VideoDetailController extends GetxController
   void onInit() {
     super.onInit();
     args = Get.arguments;
-    if (PageUtils.noAutoPlay) {
-      PageUtils.noAutoPlay = false;
+    // 从评论详情的「前往」进来时按设置不自动播放
+    if (args['replyRootId'] != null && Pref.replyNoAutoPlay) {
       _autoPlay.value = false;
     }
     videoType = args['videoType'];
@@ -507,6 +509,7 @@ class VideoDetailController extends GetxController
 
     bvid = args['bvid'];
     aid = args['aid'];
+    _rcmdReport = args['rcmdReport']?..start(args['cid']);
     cid = RxInt(args['cid']);
     epId = args['epId'];
     seasonId = args['seasonId'];
@@ -534,7 +537,9 @@ class VideoDetailController extends GetxController
     tabCtr = TabController(
       length: 2,
       vsync: this,
-      initialIndex: Pref.defaultShowComment ? 1 : 0,
+      initialIndex: args['replyRootId'] != null
+          ? 1
+          : (Pref.defaultShowComment ? 1 : 0),
     );
   }
 
@@ -949,12 +954,12 @@ class VideoDetailController extends GetxController
     }
   }
 
-  Future<void>? _initPlayerIfNeeded(bool autoFullScreenFlag) {
+  Future<void>? _initPlayerIfNeeded(AutoFullscreenMode autoFullScreen) {
     if (_autoPlay.value ||
         (plPlayerController.preInitPlayer && !plPlayerController.processing) &&
             (isFileSource || videoPlayerKey.currentState?.mounted == true)) {
       return playerInit(
-        autoFullScreenFlag: autoFullScreenFlag && _autoPlay.value,
+        autoFullScreen: _autoPlay.value ? autoFullScreen : .off,
       );
     }
     return null;
@@ -962,7 +967,7 @@ class VideoDetailController extends GetxController
 
   Future<void> playerInit({
     bool? autoplay,
-    bool autoFullScreenFlag = false,
+    AutoFullscreenMode autoFullScreen = .off,
   }) async {
     plPlayerController.onNetworkPolicyChanged = _onNetworkPolicyChanged;
     plPlayerController.onCdnFallback = _fallbackCdn;
@@ -1054,7 +1059,7 @@ class VideoDetailController extends GetxController
       width: firstVideo.width,
       height: firstVideo.height,
       volume: volume,
-      autoFullScreenFlag: autoFullScreenFlag,
+      autoFullScreen: autoFullScreen,
     );
 
     if (isClosed) return;
@@ -1325,10 +1330,10 @@ class VideoDetailController extends GetxController
   /// TODO: merge [DownloadHttp.getVideoUrl].
   Future<void> queryVideoUrl({
     bool fromReset = false,
-    bool autoFullScreenFlag = false,
+    AutoFullscreenMode autoFullScreen = .off,
   }) async {
     if (isFileSource) {
-      return _initPlayerIfNeeded(autoFullScreenFlag);
+      return _initPlayerIfNeeded(autoFullScreen);
     }
     if (isQuerying) {
       return;
@@ -1405,7 +1410,7 @@ class VideoDetailController extends GetxController
             _setVideoHeight();
             currentDecodeFormats = VideoDecodeFormatType.AVC;
             currentVideoQa.value = videoQuality;
-            await _initPlayerIfNeeded(autoFullScreenFlag);
+            await _initPlayerIfNeeded(autoFullScreen);
             return;
           }
 
@@ -1435,7 +1440,7 @@ class VideoDetailController extends GetxController
             seasonId: seasonId,
           ),
         );
-        await _initPlayerIfNeeded(autoFullScreenFlag);
+        await _initPlayerIfNeeded(autoFullScreen);
       } else {
         _autoPlay.value = false;
         videoState.value = false;
@@ -1721,7 +1726,14 @@ class VideoDetailController extends GetxController
     }
   }
 
+  // 从 App 推荐点进来时带的推荐来源上报，离开时报完就丢掉
+  RcmdReport? _rcmdReport;
+
   void makeHeartBeat() {
+    if (_rcmdReport case final report?) {
+      _rcmdReport = null;
+      report.end(playedTime?.inSeconds ?? 0);
+    }
     if (plPlayerController.enableHeart &&
         !plPlayerController.playerStatus.isCompleted &&
         playedTime != null) {
@@ -1915,7 +1927,7 @@ class VideoDetailController extends GetxController
     return false;
   }
 
-  void toAudioPage() {
+  Future<void> toAudioPage() async {
     int? id;
     int? extraId;
     PlaylistSource from = PlaylistSource.UP_ARCHIVE;
@@ -1926,6 +1938,15 @@ class VideoDetailController extends GetxController
     } else if (isUgc) {
       try {
         final ctr = Get.find<UgcIntroController>(tag: heroTag);
+        // 简介还没回来就不知道有没有合集，弱网下先等它，否则播放列表只有这一个
+        if (ctr.videoDetail.value.bvid != bvid) {
+          SmartDialog.showLoading(msg: '等合集信息');
+          try {
+            await ctr.introLoading;
+          } finally {
+            SmartDialog.dismiss();
+          }
+        }
         id = ctr.videoDetail.value.ugcSeason?.id;
         if (id != null) {
           extraId = 8;

@@ -6,6 +6,7 @@ import 'package:PiliBro/common/constants.dart';
 import 'package:PiliBro/http/api.dart';
 import 'package:PiliBro/http/browser_ua.dart';
 import 'package:PiliBro/http/init.dart';
+import 'package:PiliBro/pages/setting/pc_check.dart';
 import 'package:PiliBro/services/brotech_scripts.dart';
 import 'package:PiliBro/services/daily_checkin.dart';
 import 'package:PiliBro/utils/accounts/account.dart';
@@ -13,6 +14,7 @@ import 'package:PiliBro/utils/page_utils.dart';
 import 'package:PiliBro/utils/storage.dart';
 import 'package:PiliBro/utils/storage_key.dart';
 import 'package:PiliBro/utils/storage_pref.dart';
+import 'package:collection/collection.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart' show kDebugMode;
@@ -41,6 +43,12 @@ abstract final class Update {
       DailyCheckin.onNewDay(day);
     }
     cache.put(LocalCacheKey.launchSlot, slot + 1);
+    if (Platform.isWindows && cache.get(LocalCacheKey.pcChecked) == null) {
+      cache.put(LocalCacheKey.pcChecked, true);
+      WidgetsBinding.instance.addPostFrameCallback(
+        (_) => PcCheck.onFirstLaunch(),
+      );
+    }
     final bucket = slot % n;
     final ignore = cache.get(LocalCacheKey.updateIgnore);
     if (Pref.autoUpdate &&
@@ -72,7 +80,14 @@ abstract final class Update {
         }
         return;
       }
-      final data = res.data[0];
+      // 跳过预发布版：只在拿到列表后挑第一个正式版
+      final data = (res.data as List).firstWhereOrNull(
+        (e) => e['prerelease'] != true,
+      );
+      if (data == null) {
+        if (!isAuto) SmartDialog.showToast('已是最新版本');
+        return;
+      }
       final int latest =
           DateTime.parse(data['created_at']).millisecondsSinceEpoch ~/ 1000;
       final version = data['tag_name']?.toString() ?? data['created_at'].toString();
@@ -112,7 +127,13 @@ abstract final class Update {
                         style: const TextStyle(fontSize: 20),
                       ),
                       const SizedBox(height: 8),
-                      Text('${data['body']}'),
+                      // 发布正文从设备徽标那块 HTML 起是给网页看的，只留前面的说明
+                      Text(
+                        '${data['body']}'
+                            .split('<div align="center">')
+                            .first
+                            .trim(),
+                      ),
                       TextButton(
                         onPressed: () => PageUtils.launchURL(
                           '${Constants.sourceCodeUrl}/commits/${Constants.sourceBranch}',

@@ -16,6 +16,8 @@ import 'package:PiliBro/pages/video/reply/widgets/reply_item_grpc.dart';
 import 'package:PiliBro/pages/video/reply_reply/view.dart';
 import 'package:PiliBro/utils/feed_back.dart';
 import 'package:easy_debounce/easy_throttle.dart';
+import 'package:flutter/services.dart'
+    show KeyDownEvent, KeyRepeatEvent, LogicalKeyboardKey;
 import 'package:get/get.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -26,12 +28,14 @@ class VideoReplyPanel extends StatefulWidget {
     required this.heroTag,
     required this.isNested,
     this.header,
+    this.directionalFocus = false,
   });
 
   final int replyLevel;
   final String heroTag;
   final bool isNested;
   final Widget? header;
+  final bool directionalFocus;
 
   @override
   State<VideoReplyPanel> createState() => _VideoReplyPanelState();
@@ -45,6 +49,9 @@ class _VideoReplyPanelState extends State<VideoReplyPanel>
         FabMixin {
   late ColorScheme colorScheme;
   late VideoReplyController _videoReplyController;
+  final _targetReplyKey = GlobalKey();
+  bool _targetJumpQueued = false;
+  bool _targetJumpDone = false;
 
   String get heroTag => widget.heroTag;
 
@@ -146,7 +153,35 @@ class _VideoReplyPanelState extends State<VideoReplyPanel>
       child: refreshIndicator(
         onRefresh: _videoReplyController.onRefresh,
         isClampingScrollPhysics: widget.isNested,
-        child: child,
+        child: widget.directionalFocus
+            ? Focus(
+                descendantsAreFocusable: false,
+                onKeyEvent: (_, event) {
+                  if (event is KeyDownEvent || event is KeyRepeatEvent) {
+                    final delta = switch (event.logicalKey) {
+                      LogicalKeyboardKey.arrowUp => -120.0,
+                      LogicalKeyboardKey.arrowDown => 120.0,
+                      _ => 0.0,
+                    };
+                    if (delta != 0) {
+                      final controller =
+                          _videoReplyController.scrollController;
+                      controller.jumpTo(
+                        (controller.offset + delta)
+                            .clamp(
+                              0.0,
+                              controller.position.maxScrollExtent,
+                            )
+                            .toDouble(),
+                      );
+                      return .handled;
+                    }
+                  }
+                  return .ignored;
+                },
+                child: child,
+              )
+            : child,
       ),
     );
   }
@@ -191,7 +226,7 @@ class _VideoReplyPanelState extends State<VideoReplyPanel>
                   ),
                 );
               } else {
-                return ReplyItemGrpc(
+                final child = ReplyItemGrpc(
                   replyItem: response[index],
                   replyLevel: widget.replyLevel,
                   replyReply: replyReply,
@@ -209,6 +244,22 @@ class _VideoReplyPanelState extends State<VideoReplyPanel>
                     _videoReplyController.videoType.replyType,
                   ),
                 );
+                if (_videoReplyController.targetReplyId ==
+                    response[index].id.toInt()) {
+                  if (!_targetJumpQueued && !_targetJumpDone) {
+                    _targetJumpQueued = true;
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      _targetJumpQueued = false;
+                      final context = _targetReplyKey.currentContext;
+                      if (context != null && mounted) {
+                        _targetJumpDone = true;
+                        Scrollable.ensureVisible(context, alignment: 0.25);
+                      }
+                    });
+                  }
+                  return KeyedSubtree(key: _targetReplyKey, child: child);
+                }
+                return child;
               }
             },
             itemCount: count,

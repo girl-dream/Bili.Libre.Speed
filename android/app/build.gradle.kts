@@ -93,6 +93,7 @@ abstract class GenerateDesktopIconResources : DefaultTask() {
                             <intent-filter>
                                 <action android:name="android.intent.action.MAIN" />
                                 <category android:name="android.intent.category.LAUNCHER" />
+                                <category android:name="android.intent.category.LEANBACK_LAUNCHER" />
                             </intent-filter>
                         </activity-alias>
                     """.trimIndent(),
@@ -197,6 +198,8 @@ android {
 //            )
         }
         debug {
+            // 调试包换个包名与正式版共存；签名不变（上面 all 里统一用正式签名）
+            applicationIdSuffix = ".jiejie.daren"
         }
     }
 

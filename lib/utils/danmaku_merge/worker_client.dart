@@ -53,10 +53,12 @@ class DanmakuMergeWorkerClient {
         taskId: taskId,
         segmentIndex: segmentIndex,
         config: config,
-        currentSegment:
-            (DmSegMobileReply()..elems.addAll(currentSegment)).writeToBuffer(),
-        nextSegmentPrefix:
-            (DmSegMobileReply()..elems.addAll(nextSegmentPrefix)).writeToBuffer(),
+        currentSegment: TransferableTypedData.fromList([
+          (DmSegMobileReply()..elems.addAll(currentSegment)).writeToBuffer(),
+        ]),
+        nextSegmentPrefix: TransferableTypedData.fromList([
+          (DmSegMobileReply()..elems.addAll(nextSegmentPrefix)).writeToBuffer(),
+        ]),
       ).toMessage(),
     );
     return completer.future;
@@ -162,16 +164,17 @@ class DanmakuMergeWorkerClient {
     final type = message['type'];
     if (type == 'result') {
       final result = DanmakuMergeResultPayload.fromMessage(message);
+      final mergedBytes = result.mergedSegment.materialize().asUint8List();
       if (kDebugMode) {
         debugPrint(
           '[DanmakuMergeWorker] result task=${result.taskId} '
-          'segment=${result.segmentIndex} merged=${result.mergedSegment.length}',
+          'segment=${result.segmentIndex} merged=${mergedBytes.length}',
         );
       }
       final completer = _pending.remove(result.taskId);
       if (completer != null && !completer.isCompleted) {
         completer.complete(
-          DmSegMobileReply.fromBuffer(result.mergedSegment).elems,
+          DmSegMobileReply.fromBuffer(mergedBytes).elems,
         );
       }
       return;

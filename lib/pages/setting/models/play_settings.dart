@@ -6,8 +6,10 @@ import 'package:PiliBro/models/common/video/subtitle_pref_type.dart';
 import 'package:PiliBro/pages/setting/models/model.dart';
 import 'package:PiliBro/pages/setting/pages/fullscreen_sc_size.dart';
 import 'package:PiliBro/pages/setting/widgets/dual_slider_dialog.dart';
+import 'package:PiliBro/pages/setting/widgets/multi_select_dialog.dart';
 import 'package:PiliBro/pages/setting/widgets/select_dialog.dart';
 import 'package:PiliBro/pages/setting/widgets/slider_dialog.dart';
+import 'package:PiliBro/plugin/pl_player/models/auto_fullscreen_mode.dart';
 import 'package:PiliBro/plugin/pl_player/models/bottom_progress_behavior.dart';
 import 'package:PiliBro/plugin/pl_player/models/play_repeat.dart';
 import 'package:PiliBro/utils/extension/num_ext.dart';
@@ -77,10 +79,18 @@ List<SettingsModel> get playSettings => [
   ),
   const SwitchModel(
     title: '评论区进入不自动播放',
-    subtitle: '从评论区链接进入视频详情页时，不自动播放',
+    subtitle: '从评论区上下文查看视频详情页时，不自动播放：治好完播强迫症',
     leading: Icon(Icons.comment_outlined),
     setKey: SettingBoxKey.replyNoAutoPlay,
     defaultVal: false,
+  ),
+  NormalModel(
+    title: '顶栏按钮',
+    leading: const Icon(Icons.view_week_outlined),
+    getSubtitle: () =>
+        '播放器顶部太挤（窄屏、曲面屏）时，勾掉用不到的。当前显示 '
+        '${_headerButtons.keys.where((k) => GStorage.setting.get(k, defaultValue: true) as bool).length}/${_headerButtons.length} 个',
+    onTap: _showHeaderButtonsDialog,
   ),
   const SwitchModel(
     title: '全屏显示锁定按钮',
@@ -105,7 +115,7 @@ List<SettingsModel> get playSettings => [
     subtitle: '左侧双击快退/右侧双击快进，关闭则双击均为暂停/播放',
     leading: Icon(Icons.touch_app_outlined),
     setKey: SettingBoxKey.enableQuickDouble,
-    defaultVal: true,
+    defaultVal: false,
   ),
   if (Platform.isAndroid)
     const SwitchModel(
@@ -144,7 +154,7 @@ List<SettingsModel> get playSettings => [
     onTap: _showSubtitleDialog,
   ),
   NormalModel(
-    title: 'AI 字幕粉丝数限值',
+    title: 'AI 字幕粉丝数经验限值',
     leading: const Icon(Icons.people_outline),
     getSubtitle: () => Pref.subtitleFollowerThreshold == 0
         ? '当前关闭；仅用于“静音时自动启用”偏好'
@@ -183,12 +193,30 @@ List<SettingsModel> get playSettings => [
     setKey: SettingBoxKey.enableVerticalExpand,
     defaultVal: false,
   ),
-  const SwitchModel(
+  PopupModel(
     title: '自动全屏',
-    subtitle: '视频开始播放时进入全屏',
-    leading: Icon(Icons.fullscreen_outlined),
-    setKey: SettingBoxKey.enableAutoEnter,
-    defaultVal: false,
+    leading: const Icon(Icons.fullscreen_outlined),
+    value: () => Pref.autoFullscreenMode,
+    items: AutoFullscreenMode.values,
+    onSelected: (value, setState) => GStorage.setting
+        .put(SettingBoxKey.autoFullscreenMode, value.index)
+        .whenComplete(setState),
+  ),
+  PopupModel(
+    title: '推荐视频自动全屏',
+    leading: const Icon(Icons.fullscreen_outlined),
+    value: () => Pref.relatedAutoFullscreenMode,
+    items: AutoFullscreenMode.values,
+    onSelected: (value, setState) => GStorage.setting
+        .put(SettingBoxKey.relatedAutoFullscreenMode, value.index)
+        .whenComplete(setState),
+  ),
+  const SwitchModel(
+    title: '退回上一个推荐视频时还原播放状态',
+    subtitle: '离开时在播就接着播、暂停就停着；关闭则按自动播放开关',
+    leading: Icon(Icons.undo_outlined),
+    setKey: SettingBoxKey.relatedBackRestore,
+    defaultVal: true,
   ),
   const SwitchModel(
     title: '自动退出全屏',
@@ -459,4 +487,35 @@ Future<void> showVolumeDialog(
   if (res != null) {
     onChanged(res);
   }
+}
+
+const _headerButtons = {
+  SettingBoxKey.headerBtnHome: '返回主页',
+  SettingBoxKey.headerBtnMiniWindow: '应用内小窗',
+  SettingBoxKey.headerBtnListen: '听音频',
+  SettingBoxKey.headerBtnCast: '投屏',
+  SettingBoxKey.headerBtnSponsor: '空降助手',
+  SettingBoxKey.headerBtnDmSettings: '弹幕设置',
+  SettingBoxKey.headerBtnPip: '画中画',
+};
+
+Future<void> _showHeaderButtonsDialog(
+  BuildContext context,
+  VoidCallback setState,
+) async {
+  final res = await showDialog<Set<String>>(
+    context: context,
+    builder: (context) => MultiSelectDialog<String>(
+      title: '顶栏显示哪些按钮',
+      initValues: _headerButtons.keys.where(
+        (k) => GStorage.setting.get(k, defaultValue: true) as bool,
+      ),
+      values: _headerButtons,
+    ),
+  );
+  if (res == null) return;
+  await GStorage.setting.putAll({
+    for (final k in _headerButtons.keys) k: res.contains(k),
+  });
+  setState();
 }

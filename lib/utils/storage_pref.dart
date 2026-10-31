@@ -32,6 +32,7 @@ import 'package:PiliBro/models/user/info.dart';
 import 'package:PiliBro/pages/setting/pages/fullscreen_sc_size.dart'
     show kFullScreenSCWidth;
 import 'package:PiliBro/plugin/pl_player/models/audio_output_type.dart';
+import 'package:PiliBro/plugin/pl_player/models/auto_fullscreen_mode.dart';
 import 'package:PiliBro/plugin/pl_player/models/bottom_progress_behavior.dart';
 import 'package:PiliBro/plugin/pl_player/models/fullscreen_mode.dart';
 import 'package:PiliBro/plugin/pl_player/models/hwdec_type.dart';
@@ -323,14 +324,14 @@ abstract final class Pref {
   static WindowedPlayerRotationMode get advancedWindowedPlayerRotationMode =>
       WindowedPlayerRotationMode.values[_setting.get(
         SettingBoxKey.advancedWindowedPlayerRotationMode,
-        defaultValue: WindowedPlayerRotationMode.inheritApp.index,
+        defaultValue: WindowedPlayerRotationMode.alwaysAuto.index,
       )];
 
   static bool get advancedLandscapeEnter =>
-      _setting.get(SettingBoxKey.advancedLandscapeEnter, defaultValue: false);
+      _setting.get(SettingBoxKey.advancedLandscapeEnter, defaultValue: true);
 
   static bool get advancedPortraitExit =>
-      _setting.get(SettingBoxKey.advancedPortraitExit, defaultValue: false);
+      _setting.get(SettingBoxKey.advancedPortraitExit, defaultValue: true);
 
   static OrientationTriggerSource get advancedEnterTriggerSource =>
       OrientationTriggerSource.values[_setting.get(
@@ -347,7 +348,7 @@ abstract final class Pref {
   static OrientationTriggerContent get advancedTriggerContent =>
       OrientationTriggerContent.values[_setting.get(
         SettingBoxKey.advancedTriggerContent,
-        defaultValue: OrientationTriggerContent.all.index,
+        defaultValue: OrientationTriggerContent.landscapeVideo.index,
       )];
 
   static EntryOrientationPolicy get advancedManualEntryOrientation =>
@@ -371,7 +372,7 @@ abstract final class Pref {
   static FullScreenRotationSource get advancedFullScreenRotationSource =>
       FullScreenRotationSource.values[_setting.get(
         SettingBoxKey.advancedFullScreenRotationSource,
-        defaultValue: FullScreenRotationSource.keepCurrent.index,
+        defaultValue: FullScreenRotationSource.alwaysAuto.index,
       )];
 
   static FullScreenAllowedOrientation get advancedFullScreenAllowedOrientation =>
@@ -382,7 +383,7 @@ abstract final class Pref {
 
   static bool get advancedGravityFollowSystemLock => _setting.get(
     SettingBoxKey.advancedGravityFollowSystemLock,
-    defaultValue: true,
+    defaultValue: false,
   );
 
   static int get advancedAngleDegrees =>
@@ -390,7 +391,8 @@ abstract final class Pref {
 
   static int get advancedAutoExitCauses => _setting.get(
     SettingBoxKey.advancedAutoExitCauses,
-    defaultValue: FullscreenEntryCauseMask.orientation,
+    defaultValue:
+        FullscreenEntryCauseMask.manual | FullscreenEntryCauseMask.orientation,
   );
 
   static int get advancedManualExitConfirmations => _setting.get(
@@ -401,63 +403,33 @@ abstract final class Pref {
   static ExitOrientationMode get advancedExitOrientationMode =>
       ExitOrientationMode.values[_setting.get(
         SettingBoxKey.advancedExitOrientationMode,
-        defaultValue: ExitOrientationMode.keepPlayer.index,
+        defaultValue: ExitOrientationMode.restoreApp.index,
       )];
 
-  static const _brotherAppFallback = BrotherPhaseConfig(
-    enterAction: BrotherDirectionAction.systemCurrent,
-    resumeAction: BrotherDirectionAction.keepCurrent,
-    runtimeMode: BrotherRuntimeMode.unspecified,
-    runtimeActivation: BrotherRuntimeActivation.immediate,
-    allowedBasis: BrotherAllowedBasis.fixed,
-    allowedMask: OrientationMask.all,
-    gravityFollowSystemLock: true,
-    angleDegrees: 30,
-  );
+  static BrotherPhaseConfig get brotherAppPhase {
+    final raw = _setting.get(SettingBoxKey.brotherAppPhase);
+    return raw == null
+        ? BrotherPhaseConfig.defaultApp
+        : BrotherPhaseConfig.fromStorage(raw);
+  }
 
-  static const _brotherWindowedFallback = BrotherPhaseConfig(
-    enterAction: BrotherDirectionAction.keepCurrent,
-    resumeAction: BrotherDirectionAction.keepCurrent,
-    runtimeMode: BrotherRuntimeMode.inheritRequest,
-    runtimeActivation: BrotherRuntimeActivation.immediate,
-    allowedBasis: BrotherAllowedBasis.fixed,
-    allowedMask: OrientationMask.all,
-    gravityFollowSystemLock: true,
-    angleDegrees: 30,
-  );
+  static BrotherPhaseConfig get brotherWindowedPhase {
+    final raw = _setting.get(SettingBoxKey.brotherWindowedPhase);
+    return raw == null
+        ? BrotherPhaseConfig.defaultWindowed
+        : BrotherPhaseConfig.fromStorage(raw);
+  }
 
-  static const _brotherFullscreenFallback = BrotherPhaseConfig(
-    enterAction: BrotherDirectionAction.video,
-    resumeAction: BrotherDirectionAction.keepCurrent,
-    runtimeMode: BrotherRuntimeMode.locked,
-    runtimeActivation: BrotherRuntimeActivation.immediate,
-    allowedBasis: BrotherAllowedBasis.fixed,
-    allowedMask: OrientationMask.all,
-    gravityFollowSystemLock: true,
-    angleDegrees: 30,
-  );
-
-  static BrotherPhaseConfig get brotherAppPhase =>
-      BrotherPhaseConfig.fromStorage(
-        _setting.get(SettingBoxKey.brotherAppPhase),
-        fallback: _brotherAppFallback,
-      );
-
-  static BrotherPhaseConfig get brotherWindowedPhase =>
-      BrotherPhaseConfig.fromStorage(
-        _setting.get(SettingBoxKey.brotherWindowedPhase),
-        fallback: _brotherWindowedFallback,
-      );
-
-  static BrotherPhaseConfig get brotherFullscreenPhase =>
-      BrotherPhaseConfig.fromStorage(
-        _setting.get(SettingBoxKey.brotherFullscreenPhase),
-        fallback: _brotherFullscreenFallback,
-      );
+  static BrotherPhaseConfig get brotherFullscreenPhase {
+    final raw = _setting.get(SettingBoxKey.brotherFullscreenPhase);
+    return raw == null
+        ? BrotherPhaseConfig.defaultFullscreen
+        : BrotherPhaseConfig.fromStorage(raw);
+  }
 
   static int get brotherFullscreenEnterOverrideMask => _setting.get(
     SettingBoxKey.brotherFullscreenEnterOverrideMask,
-    defaultValue: FullscreenEntryCauseMask.all,
+    defaultValue: 0,
   );
 
   static BrotherDirectionAction get brotherFullscreenManualEnter =>
@@ -502,14 +474,14 @@ abstract final class Pref {
       )];
 
   static bool get brotherLandscapeEnter =>
-      _setting.get(SettingBoxKey.brotherLandscapeEnter, defaultValue: false);
+      _setting.get(SettingBoxKey.brotherLandscapeEnter, defaultValue: true);
 
   static bool get brotherPortraitExit =>
-      _setting.get(SettingBoxKey.brotherPortraitExit, defaultValue: false);
+      _setting.get(SettingBoxKey.brotherPortraitExit, defaultValue: true);
 
   static int get brotherEnterSignalMask => _setting.get(
     SettingBoxKey.brotherEnterSignalMask,
-    defaultValue: BrotherOrientationSignalMask.window,
+    defaultValue: BrotherOrientationSignalMask.proposedSystem,
   );
 
   static int get brotherEnterSignalRequired => _setting.get(
@@ -519,7 +491,7 @@ abstract final class Pref {
 
   static int get brotherExitSignalMask => _setting.get(
     SettingBoxKey.brotherExitSignalMask,
-    defaultValue: BrotherOrientationSignalMask.window,
+    defaultValue: BrotherOrientationSignalMask.proposedSystem,
   );
 
   static int get brotherExitSignalRequired => _setting.get(
@@ -529,12 +501,12 @@ abstract final class Pref {
 
   static int get brotherManualExitSignalMask => _setting.get(
     SettingBoxKey.brotherManualExitSignalMask,
-    defaultValue: BrotherOrientationSignalMask.proposedSystem,
+    defaultValue: BrotherOrientationSignalMask.window,
   );
 
   static int get brotherManualExitSignalRequired => _setting.get(
     SettingBoxKey.brotherManualExitSignalRequired,
-    defaultValue: 1,
+    defaultValue: 0,
   );
 
   static OrientationTriggerContent get brotherEnterTriggerContent =>
@@ -551,7 +523,8 @@ abstract final class Pref {
 
   static int get brotherAutoExitCauses => _setting.get(
     SettingBoxKey.brotherAutoExitCauses,
-    defaultValue: FullscreenEntryCauseMask.orientation,
+    defaultValue:
+        FullscreenEntryCauseMask.manual | FullscreenEntryCauseMask.orientation,
   );
 
   static int get brotherManualExitConfirmations => _setting.get(
@@ -813,6 +786,9 @@ abstract final class Pref {
 
   static bool get rcmdAnonymous =>
       _setting.get(SettingBoxKey.rcmdAnonymous, defaultValue: false);
+
+  static bool get rcmdReportClick =>
+      _setting.get(SettingBoxKey.rcmdReportClick, defaultValue: false);
 
   static bool get rcmdInterestDone =>
       _setting.get(SettingBoxKey.rcmdInterestDone, defaultValue: false);
@@ -1339,7 +1315,7 @@ abstract final class Pref {
       )];
 
   static bool get enableQuickDouble =>
-      _setting.get(SettingBoxKey.enableQuickDouble, defaultValue: true);
+      _setting.get(SettingBoxKey.enableQuickDouble, defaultValue: false);
 
   static bool get fullScreenGestureReverse =>
       _setting.get(SettingBoxKey.fullScreenGestureReverse, defaultValue: false);
@@ -1460,8 +1436,24 @@ abstract final class Pref {
   static bool get enableOnlineTotal =>
       _setting.get(SettingBoxKey.enableOnlineTotal, defaultValue: true);
 
-  static bool get autoEnterFullScreen =>
-      _setting.get(SettingBoxKey.enableAutoEnter, defaultValue: false);
+  // 旧版只有开关（enableAutoEnter），没设过新键时按它推出来
+  static AutoFullscreenMode get autoFullscreenMode =>
+      AutoFullscreenMode.values[_setting.get(
+        SettingBoxKey.autoFullscreenMode,
+        defaultValue:
+            _setting.get(SettingBoxKey.enableAutoEnter, defaultValue: false)
+            ? AutoFullscreenMode.always.index
+            : AutoFullscreenMode.off.index,
+      )];
+
+  static AutoFullscreenMode get relatedAutoFullscreenMode =>
+      AutoFullscreenMode.values[_setting.get(
+        SettingBoxKey.relatedAutoFullscreenMode,
+        defaultValue: AutoFullscreenMode.off.index,
+      )];
+
+  static bool get relatedBackRestore =>
+      _setting.get(SettingBoxKey.relatedBackRestore, defaultValue: true);
 
   static bool get enableAutoLongPressSpeed =>
       _setting.get(SettingBoxKey.enableAutoLongPressSpeed, defaultValue: true);
@@ -1649,6 +1641,22 @@ abstract final class Pref {
 
   static bool get showFsLockBtn =>
       _setting.get(SettingBoxKey.showFsLockBtn, defaultValue: true);
+
+  // 播放器顶栏按钮，屏幕窄时用户自己关掉不用的
+  static bool get headerBtnHome =>
+      _setting.get(SettingBoxKey.headerBtnHome, defaultValue: true);
+  static bool get headerBtnMiniWindow =>
+      _setting.get(SettingBoxKey.headerBtnMiniWindow, defaultValue: true);
+  static bool get headerBtnListen =>
+      _setting.get(SettingBoxKey.headerBtnListen, defaultValue: true);
+  static bool get headerBtnCast =>
+      _setting.get(SettingBoxKey.headerBtnCast, defaultValue: true);
+  static bool get headerBtnSponsor =>
+      _setting.get(SettingBoxKey.headerBtnSponsor, defaultValue: true);
+  static bool get headerBtnDmSettings =>
+      _setting.get(SettingBoxKey.headerBtnDmSettings, defaultValue: true);
+  static bool get headerBtnPip =>
+      _setting.get(SettingBoxKey.headerBtnPip, defaultValue: true);
 
   static bool get silentDownImg =>
       _setting.get(SettingBoxKey.silentDownImg, defaultValue: false);

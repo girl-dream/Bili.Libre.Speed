@@ -60,7 +60,10 @@ import 'package:get/get.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:protobuf/protobuf.dart';
 
+
 part 'package:PiliBro/common/widgets/context_menu/reply_menu_helper.dart';
+
+final Map<String, String> _locationCache = {};
 
 class ReplyItemGrpc extends StatelessWidget {
   const ReplyItemGrpc({
@@ -263,7 +266,8 @@ class ReplyItemGrpc extends StatelessWidget {
                     ),
                     if (replyItem.replyControl.hasLocation())
                       Text(
-                        ' • ${replyItem.replyControl.location}',
+                        _locationCache[replyItem.replyControl.location] ??=
+                            ' • ${replyItem.replyControl.location.substring(5)}',
                         style: TextStyle(
                           fontSize: 11,
                           color: colorScheme.outline,
@@ -822,7 +826,6 @@ class ReplyItemGrpc extends StatelessWidget {
             ..onTap = () {
               if (url.appUrlSchema.isEmpty) {
                 if (_avBvRegExp.hasMatch(matchStr)) {
-                  PageUtils.noAutoPlay = Pref.replyNoAutoPlay;
                   UrlUtils.matchUrlPush(matchStr, '');
                 } else {
                   final match = _cvidRegExp.firstMatch(matchStr);
@@ -847,8 +850,6 @@ class ReplyItemGrpc extends StatelessWidget {
                     parameters: {'keyword': url.title},
                   );
                 } else {
-                  PageUtils.noAutoPlay =
-                      Pref.replyNoAutoPlay && matchStr.contains('/video/');
                   PageUtils.handleWebview(matchStr);
                 }
               }
@@ -982,8 +983,6 @@ class ReplyItemGrpc extends StatelessWidget {
                 style: primaryStyle,
                 recognizer: NoDeadlineTapGestureRecognizer()
                   ..onTap = () {
-                    PageUtils.noAutoPlay =
-                        Pref.replyNoAutoPlay && matchStr.contains('/video/');
                     PageUtils.handleWebview(matchStr);
                   },
               ),
