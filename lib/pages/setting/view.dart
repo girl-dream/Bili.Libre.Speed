@@ -255,11 +255,6 @@ class _SettingPageState extends State<SettingPage> {
           leading: _items.last.icon,
           title: Text(_items.last.type.title, style: titleStyle),
         ),
-        ListTile(
-          onTap: () => Get.to(() => const BroTechPage()),
-          leading: Icon(MdiIcons.routerWireless),
-          title: Text('路由器高级统计与增强（Bro-Stat）', style: titleStyle),
-        ),
       ],
     );
   }

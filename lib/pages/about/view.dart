@@ -20,7 +20,6 @@ import 'package:PiliBro/utils/extension/num_ext.dart';
 import 'package:PiliBro/utils/page_utils.dart';
 import 'package:PiliBro/utils/platform_utils.dart';
 import 'package:PiliBro/utils/storage.dart';
-import 'package:PiliBro/utils/update.dart';
 import 'package:PiliBro/utils/utils.dart';
 import 'package:flutter_smart_dialog/flutter_smart_dialog.dart';
 import 'package:get/get.dart';
@@ -134,7 +133,6 @@ class _AboutPageState extends State<AboutPage> {
             ),
           ),
           ListTile(
-            onTap: () => Update.checkUpdate(false),
             onLongPress: () => Utils.copyText(currentVersion),
             onSecondaryTap: PlatformUtils.isMobile
                 ? null
@@ -180,21 +178,6 @@ Commit Hash: ${BuildConfig.commitHash}''',
               title: const Text('打开受支持的链接'),
               trailing: Icon(Icons.arrow_forward, size: 16, color: outline),
             ),
-          ListTile(
-            onTap: () => PageUtils.launchURL(
-              'https://www.goofish.com/personal?userId=2216485229713',
-            ),
-            leading: const Icon(Icons.storefront_outlined),
-            title: const Text('影像 音频 闲鱼小铺（点我交流）'),
-            trailing: Icon(Icons.arrow_forward, size: 16, color: outline),
-          ),
-          ListTile(
-            onTap: () =>
-                PageUtils.launchURL('${Constants.sourceCodeUrl}/issues'),
-            leading: const Icon(Icons.feedback_outlined),
-            title: const Text('问题反馈'),
-            trailing: Icon(Icons.arrow_forward, size: 16, color: outline),
-          ),
           ListTile(
             onTap: () => Get.toNamed('/logs'),
             onLongPress: LoggerUtils.clearLogs,
