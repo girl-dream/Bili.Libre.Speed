@@ -26,7 +26,6 @@ import 'package:PiliBro/models_new/video/video_note_list/data.dart';
 import 'package:PiliBro/models_new/video/video_play_info/data.dart';
 import 'package:PiliBro/models_new/video/video_relation/data.dart';
 import 'package:PiliBro/models_new/video/video_shot/data.dart';
-import 'package:PiliBro/services/daily_checkin.dart';
 import 'package:PiliBro/utils/accounts.dart';
 import 'package:PiliBro/utils/accounts/account.dart';
 import 'package:PiliBro/utils/app_sign.dart';
@@ -751,6 +750,31 @@ abstract final class VideoHttp {
     );
   }
 
+  /// App 端播放上报（官方 App 的心跳），推荐来源只能走这个接口带上，见 RcmdReport
+  static Future<Response> heartBeatMobile(
+    BiliApp app,
+    LoginAccount account,
+    String token,
+    Map<String, dynamic> params,
+  ) {
+    params
+      ..addAll(app.commonParams)
+      ..['access_key'] = token;
+    AppSign.appSign(params, app);
+    return Request().post(
+      'https://api.bilibili.com/x/report/heartbeat/mobile',
+      data: params,
+      options: Options(
+        contentType: Headers.formUrlEncodedContentType,
+        headers: {
+          ...BiliDevice.appHeaders(app, account.mid),
+          ...BiliSession.dynamicHeaders,
+        },
+        extra: {'account': const NoAccount()},
+      ),
+    );
+  }
+
   // 视频播放进度
   static Future<void> heartBeat({
     Object? aid,
@@ -763,7 +787,7 @@ abstract final class VideoHttp {
     required VideoType videoType,
   }) {
     final isPugv = videoType == VideoType.pugv;
-    final res = Request().post(
+    return Request().post(
       Api.heartBeat,
       data: {
         if (isPugv) 'aid': ?aid else 'bvid': ?bvid,
@@ -777,13 +801,6 @@ abstract final class VideoHttp {
       },
       options: Options(contentType: Headers.formUrlEncodedContentType),
     );
-    // 当天第一次真正看过（进度不为 0 且上报成功）后做观看类的每日任务
-    if (DailyCheckin.watchPending && progress != 0 && bvid != null) {
-      res.then((r) {
-        if (r.data case {'code': 0}) DailyCheckin.onWatched(bvid);
-      });
-    }
-    return res;
   }
 
   static Future<void> medialistHistory({

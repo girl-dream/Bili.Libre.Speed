@@ -20,6 +20,7 @@ import 'package:PiliBro/models/video/play/url.dart';
 import 'package:PiliBro/models_new/video/video_shot/data.dart';
 import 'package:PiliBro/pages/danmaku/danmaku_model.dart';
 import 'package:PiliBro/pages/sponsor_block/block_mixin.dart';
+import 'package:PiliBro/plugin/pl_player/models/auto_fullscreen_mode.dart';
 import 'package:PiliBro/plugin/pl_player/models/data_source.dart';
 import 'package:PiliBro/plugin/pl_player/models/data_status.dart';
 import 'package:PiliBro/plugin/pl_player/models/double_tap_type.dart';
@@ -186,9 +187,6 @@ class PlPlayerController
 
   /// [videoController] instance of Player
   VideoController? get videoController => _videoController;
-
-  /// Changes only when Android needs a fresh native video output.
-  final RxInt videoOutputRevision = 0.obs;
 
   bool isMuted = false;
 
@@ -433,7 +431,6 @@ class PlPlayerController
   late final uiScale = Pref.uiScale;
   void Function()? onFullscreenExited;
 
-  late final bool autoEnterFullScreen = Pref.autoEnterFullScreen;
   late final bool autoExitFullscreen = Pref.autoExitFullscreen;
   late final bool autoPlayEnable = Pref.autoPlayEnable;
   late final bool enableVerticalExpand = Pref.enableVerticalExpand;
@@ -623,6 +620,12 @@ class PlPlayerController
   BrotherPhaseConfig get _brotherCurrentPhase =>
       _brotherActivePhase ??
       (isFullScreen.value ? _brotherPlan.fullscreen : _brotherPlan.windowed);
+
+  // 各入口读各自的开关传进来，这里只按当前屏幕和视频方向判断
+  bool allowsAutoFullScreen(AutoFullscreenMode mode) => mode.allows(
+    screenLandscape: _currentSystemLandscape,
+    videoVertical: _isVertical,
+  );
 
   bool get _currentSystemLandscape {
     final views = WidgetsBinding.instance.platformDispatcher.views;
@@ -1315,7 +1318,7 @@ class PlPlayerController
     VideoType? videoType,
     VoidCallback? onInit,
     Volume? volume,
-    bool autoFullScreenFlag = false,
+    AutoFullscreenMode autoFullScreen = AutoFullscreenMode.off,
   }) async {
     final previousPosition =
         _videoPlayerController?.state.position ?? Duration.zero;
@@ -1437,7 +1440,7 @@ class PlPlayerController
 
       dataStatus.value = .loaded;
 
-      if (autoFullScreenFlag && autoEnterFullScreen) {
+      if (allowsAutoFullScreen(autoFullScreen)) {
         triggerFullScreen(
           status: true,
           cause: FullscreenEntryCause.playbackAuto,
@@ -1653,71 +1656,6 @@ class PlPlayerController
     _hwdecWatchTicks = Pref.hwdecWatchSeconds * _positionClock.frequency;
     _nextHwdecWatchTick = _positionClock.elapsedTicks + _hwdecWatchTicks;
     _lastHwdecWatched = null;
-  }
-
-  /// Recreate Android's Player + Texture after an unusually long background
-  /// interval. Re-opening media on the old Player is insufficient because the
-  /// Android VideoController caches its Surface for the same media URI.
-  /// Invoked only by the visible video page on foreground return.
-  Future<bool> recoverAndroidVideoOutput({required bool resumePlaying}) async {
-    if (!Platform.isAndroid ||
-        _processing ||
-        _playerCount == 0 ||
-        _isCloseAll ||
-        isLive ||
-        onlyPlayAudio.value) {
-      return false;
-    }
-    final previous = _videoPlayerController;
-    if (previous == null ||
-        _videoController == null ||
-        previous.current.isEmpty) {
-      return false;
-    }
-
-    _processing = true;
-    final rate = previous.state.rate;
-    final media = previous.current.last.copyWith(
-      start: previous.state.position,
-    );
-    try {
-      await previous.pause();
-      _removeListeners();
-      _videoPlayerController = null;
-      _videoController = null;
-      await previous.dispose();
-      if (_playerCount == 0 || _isCloseAll) return false;
-
-      final replacement = await _initPlayer();
-      if (_playerCount == 0 || _isCloseAll) {
-        _removeListeners();
-        await replacement.dispose();
-        _videoController = null;
-        return false;
-      }
-      _videoPlayerController = replacement;
-      if (isAnim && superResolutionType.value != SuperResolutionType.disable) {
-        await setShader();
-      }
-      await replacement.open(media, play: false);
-      if (_playerCount == 0 || _isCloseAll) return false;
-      if (rate != replacement.state.rate) await replacement.setRate(rate);
-      videoOutputRevision.value++;
-      if (resumePlaying) {
-        await replacement.play();
-      } else {
-        playerStatus = .paused;
-      }
-      return true;
-    } catch (error, stackTrace) {
-      if (kDebugMode) {
-        debugPrint('Android video output recovery failed: $error');
-        debugPrint(stackTrace.toString());
-      }
-      return false;
-    } finally {
-      _processing = false;
-    }
   }
 
   Future<void>? refreshPlayer() {

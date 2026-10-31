@@ -32,6 +32,7 @@ import 'package:PiliBro/models/user/info.dart';
 import 'package:PiliBro/pages/setting/pages/fullscreen_sc_size.dart'
     show kFullScreenSCWidth;
 import 'package:PiliBro/plugin/pl_player/models/audio_output_type.dart';
+import 'package:PiliBro/plugin/pl_player/models/auto_fullscreen_mode.dart';
 import 'package:PiliBro/plugin/pl_player/models/bottom_progress_behavior.dart';
 import 'package:PiliBro/plugin/pl_player/models/fullscreen_mode.dart';
 import 'package:PiliBro/plugin/pl_player/models/hwdec_type.dart';
@@ -786,6 +787,9 @@ abstract final class Pref {
   static bool get rcmdAnonymous =>
       _setting.get(SettingBoxKey.rcmdAnonymous, defaultValue: false);
 
+  static bool get rcmdReportClick =>
+      _setting.get(SettingBoxKey.rcmdReportClick, defaultValue: false);
+
   static bool get rcmdInterestDone =>
       _setting.get(SettingBoxKey.rcmdInterestDone, defaultValue: false);
 
@@ -1311,7 +1315,7 @@ abstract final class Pref {
       )];
 
   static bool get enableQuickDouble =>
-      _setting.get(SettingBoxKey.enableQuickDouble, defaultValue: true);
+      _setting.get(SettingBoxKey.enableQuickDouble, defaultValue: false);
 
   static bool get fullScreenGestureReverse =>
       _setting.get(SettingBoxKey.fullScreenGestureReverse, defaultValue: false);
@@ -1432,8 +1436,24 @@ abstract final class Pref {
   static bool get enableOnlineTotal =>
       _setting.get(SettingBoxKey.enableOnlineTotal, defaultValue: true);
 
-  static bool get autoEnterFullScreen =>
-      _setting.get(SettingBoxKey.enableAutoEnter, defaultValue: false);
+  // 旧版只有开关（enableAutoEnter），没设过新键时按它推出来
+  static AutoFullscreenMode get autoFullscreenMode =>
+      AutoFullscreenMode.values[_setting.get(
+        SettingBoxKey.autoFullscreenMode,
+        defaultValue:
+            _setting.get(SettingBoxKey.enableAutoEnter, defaultValue: false)
+            ? AutoFullscreenMode.always.index
+            : AutoFullscreenMode.off.index,
+      )];
+
+  static AutoFullscreenMode get relatedAutoFullscreenMode =>
+      AutoFullscreenMode.values[_setting.get(
+        SettingBoxKey.relatedAutoFullscreenMode,
+        defaultValue: AutoFullscreenMode.off.index,
+      )];
+
+  static bool get relatedBackRestore =>
+      _setting.get(SettingBoxKey.relatedBackRestore, defaultValue: true);
 
   static bool get enableAutoLongPressSpeed =>
       _setting.get(SettingBoxKey.enableAutoLongPressSpeed, defaultValue: true);
@@ -1621,6 +1641,22 @@ abstract final class Pref {
 
   static bool get showFsLockBtn =>
       _setting.get(SettingBoxKey.showFsLockBtn, defaultValue: true);
+
+  // 播放器顶栏按钮，屏幕窄时用户自己关掉不用的
+  static bool get headerBtnHome =>
+      _setting.get(SettingBoxKey.headerBtnHome, defaultValue: true);
+  static bool get headerBtnMiniWindow =>
+      _setting.get(SettingBoxKey.headerBtnMiniWindow, defaultValue: true);
+  static bool get headerBtnListen =>
+      _setting.get(SettingBoxKey.headerBtnListen, defaultValue: true);
+  static bool get headerBtnCast =>
+      _setting.get(SettingBoxKey.headerBtnCast, defaultValue: true);
+  static bool get headerBtnSponsor =>
+      _setting.get(SettingBoxKey.headerBtnSponsor, defaultValue: true);
+  static bool get headerBtnDmSettings =>
+      _setting.get(SettingBoxKey.headerBtnDmSettings, defaultValue: true);
+  static bool get headerBtnPip =>
+      _setting.get(SettingBoxKey.headerBtnPip, defaultValue: true);
 
   static bool get silentDownImg =>
       _setting.get(SettingBoxKey.silentDownImg, defaultValue: false);

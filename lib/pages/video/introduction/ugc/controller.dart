@@ -26,6 +26,7 @@ import 'package:PiliBro/pages/common/common_intro_controller.dart';
 import 'package:PiliBro/pages/dynamics_repost/view.dart';
 import 'package:PiliBro/pages/video/related/controller.dart';
 import 'package:PiliBro/pages/video/reply/controller.dart';
+import 'package:PiliBro/plugin/pl_player/models/auto_fullscreen_mode.dart';
 import 'package:PiliBro/plugin/pl_player/models/play_repeat.dart';
 import 'package:PiliBro/services/service_locator.dart';
 import 'package:PiliBro/services/playback_stats_service.dart';
@@ -85,9 +86,14 @@ class UgcIntroController extends CommonIntroController with ReloadMixin {
     videoDetail.value.title = Get.arguments['title'] ?? '';
   }
 
+  /// 最近一次简介请求；听视频要等它拿到合集信息
+  Future<void>? introLoading;
+
   // 获取视频简介&分p
   @override
-  Future<void> queryVideoIntro() async {
+  Future<void> queryVideoIntro() => introLoading = _queryVideoIntro();
+
+  Future<void> _queryVideoIntro() async {
     queryVideoTags();
     final res = await VideoHttp.videoIntro(bvid: bvid);
     if (res case Success(:final response)) {
@@ -518,6 +524,7 @@ class UgcIntroController extends CommonIntroController with ReloadMixin {
   Future<bool> onChangeEpisode(
     BaseEpisodeItem episode, {
     bool isStein = false,
+    AutoFullscreenMode autoFullScreen = AutoFullscreenMode.off,
   }) async {
     try {
       final String bvid = episode.bvid ?? this.bvid;
@@ -563,7 +570,7 @@ class UgcIntroController extends CommonIntroController with ReloadMixin {
         ..bvid = bvid
         ..aid = aid
         ..cid.value = cid
-        ..queryVideoUrl();
+        ..queryVideoUrl(autoFullScreen: autoFullScreen);
 
       if (this.bvid != bvid) {
         reload = true;

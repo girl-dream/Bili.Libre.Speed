@@ -142,12 +142,16 @@ void main() async {
   late final num? due;
   try {
     due = await GStorage.init();
-    await PlaybackArchiveService.archiveIfDue();
   } catch (e) {
     await Utils.copyText(e.toString(), needToast: false);
     if (kDebugMode) debugPrint('GStorage init error: $e');
     exit(0);
   }
+  // 归档仍在首帧前做完（进 App 前那段等待就是归档用时）；失败不退出，
+  // 到期标记没推进，下次启动或 2 分钟的统计定时器会接着做
+  await PlaybackArchiveService.archiveIfDue().catchError((Object e) {
+    if (kDebugMode) debugPrint('Playback archive: $e');
+  });
   ScaledWidgetsFlutterBinding.instance.scaleFactor = Pref.uiScale;
   if (PlatformUtils.isMobile) await OrientationPolicy.initialize();
 

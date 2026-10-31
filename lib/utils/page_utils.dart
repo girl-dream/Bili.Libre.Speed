@@ -1,3 +1,4 @@
+import 'dart:async' show Timer;
 import 'dart:math';
 
 import 'package:PiliBro/common/widgets/fractionally_sized_box.dart';
@@ -228,10 +229,35 @@ abstract final class PageUtils {
     );
   }
 
+  static bool _dynOpening = false;
+
+  // 视频类动态跳转前要先联网查 cid，弱网下要等好几秒；这期间再点就忽略，
+  // 免得以为没点到又点一次，进两次详情页。超过 300ms 才转圈，网快时不闪
   static Future<void> pushDynDetail(
     DynamicItemModel item, {
     bool isPush = false,
     bool viewComment = false,
+  }) async {
+    if (_dynOpening) return;
+    _dynOpening = true;
+    var loading = false;
+    final timer = Timer(const Duration(milliseconds: 300), () {
+      loading = true;
+      SmartDialog.showLoading();
+    });
+    try {
+      await _pushDynDetail(item, isPush: isPush, viewComment: viewComment);
+    } finally {
+      timer.cancel();
+      if (loading) SmartDialog.dismiss(status: SmartStatus.loading);
+      _dynOpening = false;
+    }
+  }
+
+  static Future<void> _pushDynDetail(
+    DynamicItemModel item, {
+    required bool isPush,
+    required bool viewComment,
   }) async {
     feedBack();
 
@@ -581,9 +607,6 @@ abstract final class PageUtils {
     };
     return PageUtils.toDupNamed('/videoV', arguments: arguments, off: off);
   }
-
-  // 评论区链接点进视频时置位，由 VideoDetailController 取走
-  static bool noAutoPlay = false;
 
   static final _pgcRegex = RegExp(r'(ep|ss)(\d+)');
   static bool viewPgcFromUri(

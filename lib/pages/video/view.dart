@@ -55,6 +55,7 @@ import 'package:PiliBro/pages/video/widgets/header_control.dart';
 import 'package:PiliBro/pages/video/widgets/intro_layout.dart';
 import 'package:PiliBro/pages/video/widgets/player_focus.dart';
 import 'package:PiliBro/plugin/pl_player/controller.dart';
+import 'package:PiliBro/plugin/pl_player/models/auto_fullscreen_mode.dart';
 import 'package:PiliBro/plugin/pl_player/models/fullscreen_mode.dart';
 import 'package:PiliBro/plugin/pl_player/models/orientation_mode.dart';
 import 'package:PiliBro/plugin/pl_player/models/play_repeat.dart';
@@ -262,6 +263,12 @@ class _VideoDetailPageVState extends State<VideoDetailPageV>
       cover: videoDetailController.cover.value,
       title: ugcIntroController.videoDetail.value.title,
     );
+    // 退回时还原离开那一刻：在播就播，暂停（含播完）就停；播完的从头停着
+    final pl = videoDetailController.plPlayerController;
+    final status = pl.playerStatus;
+    final position = status.isCompleted ? 0 : pl.positionInMilliseconds;
+    // 点相关视频等同于开一个新视频，按自动播放开关来
+    videoDetailController.autoPlay = Pref.autoPlayEnable;
     final ok = await ugcIntroController.onChangeEpisode(
       ugc.BaseEpisodeItem(
         aid: item.aid,
@@ -270,6 +277,7 @@ class _VideoDetailPageVState extends State<VideoDetailPageV>
         cover: item.cover,
         title: item.title,
       ),
+      autoFullScreen: Pref.relatedAutoFullscreenMode,
     );
     if (!ok || !mounted) return;
     route.addLocalHistoryEntry(
@@ -279,6 +287,11 @@ class _VideoDetailPageVState extends State<VideoDetailPageV>
         // 否则是整页离开（关闭全部、进小窗等 popUntil）顺带清栈，不切视频
         onRemove: () => scheduleMicrotask(() {
           if (!route.isCurrent) return;
+          videoDetailController
+            ..autoPlay = Pref.relatedBackRestore
+                ? status.isPlaying
+                : Pref.autoPlayEnable
+            ..args['progress'] = position;
           ugcIntroController.onChangeEpisode(prev);
           videoDetailController.introScrollCtr?.jumpToTop();
         }),
@@ -303,7 +316,7 @@ class _VideoDetailPageVState extends State<VideoDetailPageV>
 
   // 获取视频资源，初始化播放器
   void videoSourceInit() {
-    videoDetailController.queryVideoUrl(autoFullScreenFlag: true);
+    videoDetailController.queryVideoUrl(autoFullScreen: Pref.autoFullscreenMode);
     if (videoDetailController.autoPlay) {
       plPlayerController = videoDetailController.plPlayerController;
       plPlayerController!
@@ -447,14 +460,14 @@ class _VideoDetailPageVState extends State<VideoDetailPageV>
       ..addStatusLister(playerListener)
       ..addPositionListener(positionListener);
     if (plPlayerController.preInitPlayer) {
-      if (plPlayerController.autoEnterFullScreen) {
+      if (plPlayerController.allowsAutoFullScreen(Pref.autoFullscreenMode)) {
         plPlayerController.triggerFullScreen();
       }
       return plPlayerController.play();
     } else {
       return videoDetailController.playerInit(
         autoplay: true,
-        autoFullScreenFlag: true,
+        autoFullScreen: Pref.autoFullscreenMode,
       );
     }
   }
@@ -2238,6 +2251,9 @@ class _VideoDetailPageVState extends State<VideoDetailPageV>
         isNested: isNested,
         heroTag: heroTag,
         header: header,
+        directionalFocus:
+            !isNested &&
+            !videoDetailController.plPlayerController.keyboardControl,
       );
 
   // ai总结
