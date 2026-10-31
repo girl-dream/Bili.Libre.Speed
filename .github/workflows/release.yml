@@ -540,6 +540,11 @@ jobs:
             Move-Item $_.FullName "PiliBro-Win-Setup/PiliBro_windows_${{ env.version }}_x64_setup.exe"
           }
 
+      - name: Portable uses generic x86_64 libmpv
+        if: ${{ inputs.tag != '' }}
+        shell: pwsh
+        run: lib/scripts/portable_generic_libmpv.ps1 Release/PiliBro-Win
+
       - name: Compress portable RAR
         if: ${{ inputs.tag != '' }}
         shell: pwsh
