@@ -93,14 +93,7 @@ class AvSettingsPage extends StatelessWidget {
             Expanded(
               child: TabBarView(
                 children: [
-                  list(
-                    cdn,
-                    ListTile(
-                      leading: const Icon(Icons.network_check),
-                      title: const Text('宽带网络诊断'),
-                      onTap: () => Get.to(() => const BroTechPage()),
-                    ),
-                  ),
+                  list(cdn),
                   list(quality),
                   list(buffer),
                   list(misc),
