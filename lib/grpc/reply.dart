@@ -17,7 +17,7 @@ abstract final class ReplyGrpc {
     caseSensitive: false,
   );
   static bool enableFilter = replyRegExp.pattern.isNotEmpty;
-
+  static final RegExp _replyAtPrefixRegExp = RegExp(r'回复\s*@\s*\S+?\s*[:：]\s*');
   // static Future replyInfo({required int rpid}) {
   //   return _request(
   //     GrpcUrl.replyInfo,
@@ -97,11 +97,12 @@ abstract final class ReplyGrpc {
   }
 
   static bool needRemoveGrpc(ReplyInfo reply) {
+    var message = reply.content.message.replaceAll(_replyAtPrefixRegExp, '');
     return GlobalData().blackMids.contains(reply.mid.toInt()) ||
         _blockReplyAtCount(reply) ||
         _blockAtOnlyReply(reply) ||
         (antiGoodsReply && _needRemoveGoodGrpc(reply)) ||
-        (enableFilter && replyRegExp.hasMatch(reply.content.message));
+        (enableFilter && replyRegExp.hasMatch(message));
   }
 
   static Future<LoadingState<MainListReply>> mainList({
