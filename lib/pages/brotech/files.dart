@@ -87,19 +87,6 @@ class BroTechFilesPage extends StatelessWidget {
                   title: Text(name),
                   onTap: () => Get.to(() => BroTechDocPage(asset: '$dir$name')),
                 ),
-              Card.filled(
-                margin: const EdgeInsets.fromLTRB(16, 24, 16, 24),
-                color: colorScheme.secondaryContainer,
-                clipBehavior: Clip.antiAlias,
-                child: ListTile(
-                  leading: const Icon(FontAwesomeIcons.github),
-                  title: const Text('上 GitHub 获取源文件'),
-                  subtitle: Text('顺手给我点个 Star 哟～　ucxn/$repo'),
-                  trailing: const Icon(Icons.star_rounded, color: Colors.amber),
-                  onTap: () =>
-                      PageUtils.inAppWebview('https://github.com/ucxn/$repo'),
-                ),
-              ),
             ],
           );
         },

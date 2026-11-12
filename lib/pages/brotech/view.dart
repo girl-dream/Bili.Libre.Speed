@@ -3,11 +3,7 @@ import 'dart:collection';
 import 'dart:io' show FileStat, FileSystemEntityType, Platform;
 
 import 'package:PiliBro/main.dart' show webViewEnvironment;
-import 'package:PiliBro/pages/brotech/files.dart';
 import 'package:PiliBro/services/brotech_scripts.dart';
-import 'package:PiliBro/utils/device_utils.dart';
-import 'package:PiliBro/utils/permission_handler.dart';
-import 'package:PiliBro/utils/platform_utils.dart';
 import 'package:PiliBro/utils/storage.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
@@ -27,7 +23,7 @@ class _BroTechPageState extends State<BroTechPage> {
   static const _localNetworkChannel = MethodChannel('pilibro/local_network');
   static const _runAtKey = 'broTechRunAt';
   static const _consentKey = 'broTechConsent';
-  // 地址框输入彩蛋后写进同一个键，代替 true；同意许可证的判断同时认这个值
+  // 地址框输入彩蛋后写入此键，用于解锁账号密码输入
   static const _unlockMatch = 1935;
   static bool get credentialsAllowed =>
       Platform.isAndroid ||
@@ -93,16 +89,6 @@ class _BroTechPageState extends State<BroTechPage> {
   @override
   void initState() {
     super.initState();
-    if (GStorage.localCache.get(_consentKey, defaultValue: 0) == 0) {
-      WidgetsBinding.instance.addPostFrameCallback((_) async {
-        final agreed = await showDialog<bool>(
-          context: context,
-          barrierDismissible: false,
-          builder: (_) => const _BroTechConsent(),
-        );
-        if (agreed != true) Get.back();
-      });
-    }
     BroTechScripts.defaultHost().then((host) {
       if (mounted && _host.text.isEmpty) _host.text = 'http://$host';
     });
@@ -319,31 +305,7 @@ class _BroTechPageState extends State<BroTechPage> {
     );
     return Scaffold(
       appBar: AppBar(
-        title: Text.rich(
-          TextSpan(
-            text: '路由器高阶统计增强组件：哥哥科技原创',
-            children: [
-              WidgetSpan(
-                alignment: PlaceholderAlignment.top,
-                child: IconButton(
-                  tooltip: '使用须知：许可与说明',
-                  onPressed: () => showDialog<void>(
-                    context: context,
-                    builder: (_) => const _BroTechConsent(persistConsent: false),
-                  ),
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints.tightFor(
-                    width: 24,
-                    height: 24,
-                  ),
-                  iconSize: 15,
-                  color: colorScheme.primary.withValues(alpha: 0.8),
-                  icon: const Icon(Icons.gavel_rounded),
-                ),
-              ),
-            ],
-          ),
-        ),
+        title: const Text('路由器高阶统计增强组件：哥哥科技原创'),
       ),
       body: ListView(
         children: [
@@ -420,274 +382,6 @@ class _BroTechPageState extends State<BroTechPage> {
           ),
         ],
       ),
-    );
-  }
-}
-
-/// Shown once, before the router page is first used. The countdown lives in
-/// this State alone: the licence page pushed on top leaves it running, and
-/// closing the dialog drops it.
-class _BroTechConsent extends StatefulWidget {
-  const _BroTechConsent({this.persistConsent = true});
-
-  /// False when the panel is reopened for viewing after the initial consent.
-  final bool persistConsent;
-
-  @override
-  State<_BroTechConsent> createState() => _BroTechConsentState();
-}
-
-class _BroTechConsentState extends State<_BroTechConsent> {
-  late final Timer _timer;
-  int _left = 15;
-  bool? _lan;
-
-  @override
-  void initState() {
-    super.initState();
-    _timer = Timer.periodic(const Duration(milliseconds: 1200), (t) {
-      final s = WidgetsBinding.instance.lifecycleState;
-      // 手机：小窗失焦即 inactive，必须前台才计时；桌面：首次启动窗口未激活也是 inactive，只在最小化等真正离开时暂停
-      if (PlatformUtils.isMobile ? s != .resumed : s == .paused || s == .hidden) {
-        return;
-      }
-      if (--_left == 0) t.cancel();
-      setState(() {});
-    });
-    if (Platform.isAndroid && DeviceUtils.sdkInt > 36) {
-      Permission.accessLocalNetwork.isGranted.then((v) {
-        if (mounted) setState(() => _lan = v);
-      });
-    }
-  }
-
-  @override
-  void dispose() {
-    _timer.cancel();
-    super.dispose();
-  }
-
-  Future<void> _requestLan() async {
-    final status = await Permission.accessLocalNetwork.request();
-    if (mounted) setState(() => _lan = status.isGranted);
-  }
-
-  Future<void> _agree() async {
-    if (widget.persistConsent) {
-      await GStorage.localCache.put(_BroTechPageState._consentKey, 1);
-    }
-    Get.back(result: true);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = ColorScheme.of(context);
-    final textTheme = Theme.of(context).textTheme;
-    final lan = _lan;
-    final lanColor = lan == false ? colorScheme.error : Colors.green.shade600;
-    Widget term(String text) => Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      spacing: 8,
-      children: [
-        Padding(
-          padding: const EdgeInsets.only(top: 8),
-          child: CircleAvatar(
-            radius: 2,
-            backgroundColor: colorScheme.onSurfaceVariant,
-          ),
-        ),
-        Expanded(
-          child: Text(
-            text,
-            style: textTheme.bodyMedium!.copyWith(
-              color: colorScheme.onSurfaceVariant,
-              height: 1.5,
-            ),
-          ),
-        ),
-      ],
-    );
-    Widget dev(IconData icon, Color color, String label, VoidCallback onTap) =>
-        Expanded(
-          child: Material(
-            color: color.withValues(alpha: 0.1),
-            borderRadius: const BorderRadius.all(Radius.circular(14)),
-            clipBehavior: Clip.antiAlias,
-            child: InkWell(
-              onTap: onTap,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  spacing: 4,
-                  children: [
-                    Icon(icon, color: color, size: 26),
-                    Text(
-                      label,
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(fontSize: 13),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        );
-    return AlertDialog(
-      scrollable: true,
-      insetPadding: const EdgeInsets.all(24),
-      contentPadding: const EdgeInsets.fromLTRB(20, 24, 20, 0),
-      actionsPadding: const EdgeInsets.fromLTRB(12, 12, 20, 16),
-      actionsAlignment: MainAxisAlignment.spaceBetween,
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          SizedBox(
-            width: 76,
-            height: 76,
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                SizedBox.expand(
-                  child: CircularProgressIndicator(
-                    value: (15 - _left) * 0.0625, // 走满 15 秒停在 15/16，故意缺最后一格
-                    strokeWidth: 5,
-                    strokeCap: StrokeCap.round,
-                    backgroundColor: colorScheme.surfaceContainerHighest,
-                  ),
-                ),
-                if (_left == 0)
-                  Icon(Icons.check_rounded, size: 38, color: colorScheme.primary)
-                else
-                  Text(
-                    '$_left',
-                    style: textTheme.headlineMedium!.copyWith(
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            '哥哥科技 Bro-Stat 增强组件',
-            style: textTheme.headlineSmall!.copyWith(
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-              '若读完仍有时间\n'
-              '可在下左方查看B站主页\n'
-              '播放视频期间不影响时钟，看爽了可以正常返回。\n'
-              '也可点右下角“支持”逛我兄弟的闲鱼，有好的音像闲置',
-            textAlign: TextAlign.center,
-            style: TextStyle(color: colorScheme.primary, fontSize: 13),
-          ),
-          const SizedBox(height: 16),
-          DecoratedBox(
-            decoration: BoxDecoration(
-              color: colorScheme.surfaceContainerHigh,
-              borderRadius: const BorderRadius.all(Radius.circular(14)),
-            ),
-            child: Padding(
-              padding: const EdgeInsets.all(14),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                spacing: 8,
-                children: [
-                  term('该程序从云端加载脚本，并缓存到您的设备里，以方便随时之需；不到 1MiB，实现非常绿色和优雅.'),
-                  term('严格遵循哥哥科技显著署名许可证.'),
-                  term('脚本中的任何“哥哥科技”名字，均不得被篡改、弱化，或以非预期名称方式呈现。'),
-                ],
-              ),
-            ),
-          ),
-          if (lan != null) ...[
-            const SizedBox(height: 12),
-            Material(
-              color: lanColor.withValues(alpha: 0.1),
-              borderRadius: const BorderRadius.all(Radius.circular(12)),
-              clipBehavior: Clip.antiAlias,
-              child: InkWell(
-                onTap: lan ? null : _requestLan,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 14,
-                    vertical: 12,
-                  ),
-                  child: Row(
-                    spacing: 10,
-                    children: [
-                      Icon(
-                        lan ? Icons.check_circle_rounded : Icons.error_rounded,
-                        color: lanColor,
-                        size: 20,
-                      ),
-                      Expanded(
-                        child: Text(
-                          lan ? '本地网络权限已有' : '本地网络权限缺失，点击申请',
-                          style: TextStyle(
-                            color: lanColor,
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ),
-                      if (!lan)
-                        Icon(Icons.chevron_right, color: lanColor, size: 18),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ],
-          const SizedBox(height: 12),
-          Row(
-            spacing: 10,
-            children: [
-              dev(
-                Icons.person_add_alt_1_rounded,
-                colorScheme.primary,
-                '了解开发者\n'
-                '查看B站主页',
-                () => Get.toNamed('/member?mid=501430041'),
-              ),
-              dev(
-                Icons.favorite_rounded,
-                Colors.pink,
-                '支持朋友/点击了解\n'
-                '查看期间不影响计时',
-                () => Get.toNamed(
-                  '/webview',
-                  parameters: {
-                    'url':
-                        'https://www.goofish.com/personal?userId=2216485229713',
-                    'uaType': 'pc',
-                  },
-                  arguments: const {'inApp': true},
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-      actions: [
-        TextButton.icon(
-          onPressed: () => Get.to(() => const BroTechFilesPage()),
-          icon: const Icon(Icons.balance, size: 18),
-          label: const Text('许可证'),
-        ),
-        TextButton(
-          onPressed: () => Get.back(result: false),
-          child: const Text('关闭'),
-        ),
-        FilledButton(
-          onPressed: _left == 0 ? _agree : null,
-          child: const Text('同意'),
-        ),
-      ],
     );
   }
 }
@@ -778,28 +472,7 @@ class _BroTechWebPageState extends State<BroTechWebPage> {
   Widget build(BuildContext context) {
     final credentials = _BroTechPageState.credentialsAllowed;
     return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.preset.title),
-        actions: [
-          if (credentials && widget.preset.pass != null)
-            IconButton(
-              tooltip: '填充密码',
-              onPressed: _fill,
-              icon: const Icon(Icons.key_outlined),
-            ),
-          if (widget.onSave case final onSave?)
-            IconButton(
-              tooltip: '保存为快捷入口',
-              onPressed: onSave,
-              icon: const Icon(Icons.bookmark_add_outlined),
-            ),
-          IconButton(
-            tooltip: '刷新',
-            onPressed: () => _controller?.reload(),
-            icon: const Icon(Icons.refresh),
-          ),
-        ],
-      ),
+      appBar: AppBar(title: const Text('路由器高级统计与增强（哥哥科技原创）')),
       body: FutureBuilder<UserScript?>(
         future: _ready,
         builder: (context, snapshot) {

@@ -333,16 +333,35 @@ abstract final class PageUtils {
         try {
           String bvid = archive.bvid!;
           String cover = archive.cover!;
-          final res = await SearchHttp.ab2cWithDimension(bvid: bvid);
-          final cid = res?.cid;
+
+          // 私密稿件在 /x/player/pagelist 取不到 cid（「啥都木有」），
+          // 优先用带登录态 + wbi 签名的稿件详情接口取。
+          final intro = await VideoHttp.videoIntro(bvid: bvid);
+          final data = intro.dataOrNull;
+          int? cid = data?.cid ?? data?.pages?.firstOrNull?.cid;
+          Dimension? dimension = data?.dimension;
+
+          if (cid == null) {
+            // 兜底仍走 pagelist，但静默失败，不再弹 "ab2c error"。
+            final res = await SearchHttp.ab2cWithDimension(
+              bvid: bvid,
+              showErrorToast: false,
+            );
+            cid = res?.cid;
+            dimension ??= res?.dimension;
+          }
+
           if (cid != null) {
             toVideoPage(
               bvid: bvid,
               cid: cid,
               cover: cover,
-              dimension: res!.dimension,
+              dimension: dimension,
               title: archive.title,
             );
+          } else {
+            // 两条路都拿不到 cid 时至少打开动态详情，不要静默无响应
+            push();
           }
         } catch (err) {
           SmartDialog.showToast(err.toString());
@@ -394,7 +413,10 @@ abstract final class PageUtils {
         int aid = ugcSeason.aid!;
         String bvid = IdUtils.av2bv(aid);
         String cover = ugcSeason.cover!;
-        final res = await SearchHttp.ab2cWithDimension(bvid: bvid);
+        final res = await SearchHttp.ab2cWithDimension(
+          bvid: bvid,
+          showErrorToast: false,
+        );
         final cid = res?.cid;
         if (cid != null) {
           toVideoPage(
@@ -405,6 +427,8 @@ abstract final class PageUtils {
             dimension: res!.dimension,
             title: ugcSeason.title,
           );
+        } else {
+          push();
         }
         break;
 

@@ -74,19 +74,26 @@ class AuthorPanel extends StatelessWidget {
     if (pubTime != null) {
       pubTs = Text(
         '$pubTime${moduleAuthor.pubAction != null ? ' ${moduleAuthor.pubAction}' : ''}',
+        maxLines: 1,
+        overflow: .ellipsis,
         style: TextStyle(
           color: theme.colorScheme.outline,
           fontSize: theme.textTheme.labelSmall!.fontSize,
         ),
       );
       if (moduleAuthor.badgeText case final badgeText?) {
+        // 「仅自己可见」等可见范围标记跟在时间后面。两个裸 Text 直接放进
+        // Row 会拿到无界宽度、不换行，超出部分画到右侧 tag / 更多按钮上
+        // （视觉重合），并报 RenderFlex overflowed。给时间加弹性约束，
+        // 标记保持完整显示在时间之后。
         pubTs = Row(
           mainAxisSize: .min,
           spacing: 5,
           children: [
-            pubTs,
+            Flexible(child: pubTs),
             Text(
               badgeText,
+              maxLines: 1,
               style: TextStyle(
                 color: theme.colorScheme.secondary,
                 fontSize: theme.textTheme.labelSmall!.fontSize,

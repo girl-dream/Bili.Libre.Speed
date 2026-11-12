@@ -290,13 +290,6 @@ flutter:
     - path: assets/images/paycoins/
     - path: assets/shaders/
     - path: assets/danmaku_merge/
-    - path: assets/BroTech/
-    - path: assets/BroTech/ZTE/LICENSE/
-    - path: assets/BroTech/ZTE/
-    - path: assets/BroTech/Mi/
-    - path: assets/BroTech/general/
-    - path: assets/BroTech/general/COPYING/
-    - path: assets/BroTech/general/COPYING/License/
     - path: assets/web/
   fonts:
     - family: digital_id_num

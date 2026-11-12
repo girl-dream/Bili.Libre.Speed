@@ -10,6 +10,8 @@ import 'package:PiliBro/services/account_service.dart';
 import 'package:PiliBro/utils/extension/scroll_controller_ext.dart';
 import 'package:flutter_smart_dialog/flutter_smart_dialog.dart';
 import 'package:get/get.dart';
+import 'package:PiliBro/utils/accounts.dart';
+import 'package:PiliBro/http/member.dart';
 
 class DynamicsTabController
     extends CommonListController<DynamicsDataModel, DynamicItemModel>
@@ -45,7 +47,9 @@ class DynamicsTabController
 
   @override
   Future<LoadingState<DynamicsDataModel>> customGetData() =>
-      DynamicsHttp.followDynamic(
+      dynamicsType == .up && dynamicsController.hostMid == Accounts.main.mid
+          ? MemberHttp.memberDynamic(offset: offset, mid: Accounts.main.mid)
+          : DynamicsHttp.followDynamic(
         offset: offset,
         type: dynamicsType,
         hostMid: dynamicsController.hostMid,

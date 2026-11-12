@@ -7,7 +7,6 @@ import 'package:PiliBro/common/widgets/loading_widget/loading_widget.dart';
 import 'package:PiliBro/common/widgets/selection_text.dart';
 import 'package:PiliBro/services/logger.dart';
 import 'package:PiliBro/utils/date_utils.dart';
-import 'package:PiliBro/utils/page_utils.dart';
 import 'package:PiliBro/utils/storage.dart';
 import 'package:PiliBro/utils/storage_key.dart';
 import 'package:PiliBro/utils/storage_pref.dart';
@@ -142,11 +141,6 @@ class _LogsPageState extends State<LogsPage> {
               PopupMenuItem(
                 onTap: copyLogs,
                 child: const Text('复制日志'),
-              ),
-              PopupMenuItem(
-                onTap: () =>
-                    PageUtils.launchURL('${Constants.sourceCodeUrl}/issues'),
-                child: const Text('错误反馈'),
               ),
               PopupMenuItem(
                 onTap: clearLogs,

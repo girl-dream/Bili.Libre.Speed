@@ -13,8 +13,6 @@ import 'package:PiliBro/services/download/download_service.dart';
 import 'package:PiliBro/services/logger.dart';
 import 'package:PiliBro/services/playback_stats_service.dart';
 import 'package:PiliBro/services/traffic_stats_service.dart';
-import 'package:PiliBro/utils/android/android_helper.dart';
-import 'package:PiliBro/utils/android/bindings.g.dart';
 import 'package:PiliBro/utils/app_scheme.dart';
 import 'package:PiliBro/utils/cache_manager.dart';
 import 'package:PiliBro/utils/date_utils.dart';
@@ -22,11 +20,9 @@ import 'package:PiliBro/utils/extension/num_ext.dart';
 import 'package:PiliBro/utils/page_utils.dart';
 import 'package:PiliBro/utils/platform_utils.dart';
 import 'package:PiliBro/utils/storage.dart';
-import 'package:PiliBro/utils/update.dart';
 import 'package:PiliBro/utils/utils.dart';
 import 'package:flutter_smart_dialog/flutter_smart_dialog.dart';
 import 'package:get/get.dart';
-import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:material_ui/material_ui.dart' hide ListTile;
 
 class AboutPage extends StatefulWidget {
@@ -144,7 +140,6 @@ class _AboutPageState extends State<AboutPage> {
             ),
           ),
           ListTile(
-            onTap: () => Update.checkUpdate(false),
             onLongPress: () => Utils.copyText(currentVersion),
             onSecondaryTap: PlatformUtils.isMobile
                 ? null
@@ -163,9 +158,6 @@ Commit Hash: ${BuildConfig.commitHash}''',
               style: const TextStyle(fontSize: 14),
             ),
             leading: const Icon(Icons.info_outline),
-            onTap: () => PageUtils.launchURL(
-              '${Constants.sourceCodeUrl}/commit/${BuildConfig.commitHash}',
-            ),
             onLongPress: () => Utils.copyText(BuildConfig.commitHash),
             onSecondaryTap: PlatformUtils.isMobile
                 ? null
@@ -175,47 +167,6 @@ Commit Hash: ${BuildConfig.commitHash}''',
             thickness: 1,
             height: 30,
             color: theme.colorScheme.outlineVariant,
-          ),
-          ListTile(
-            onTap: () => PageUtils.launchURL(Constants.sourceBranchUrl),
-            leading: const Icon(Icons.code),
-            title: const Text('Source Code'),
-            subtitle: Text(Constants.sourceBranchUrl, style: subTitleStyle),
-          ),
-          if (Platform.isAndroid)
-            ListTile(
-              onTap: AndroidHelper.openLinkVerifySettings,
-              leading: const Icon(MdiIcons.linkBoxOutline),
-              title: const Text('打开受支持的链接'),
-              trailing: Icon(Icons.arrow_forward, size: 16, color: outline),
-            ),
-          ListTile(
-            onTap: () => PageUtils.launchURL(
-              'https://pages.goofish.com/sharexy?userid=2216485229713&bft=personal&bfp',
-            ),
-            leading: const Icon(Icons.storefront_outlined),
-            title: const Text('影像音频 鱼小铺（点我交流经验技术）'),
-            trailing: Icon(Icons.arrow_forward, size: 16, color: outline),
-          ),
-          ListTile(
-            onTap: () =>
-                PageUtils.launchURL('${Constants.sourceCodeUrl}/issues'),
-            leading: const Icon(Icons.feedback_outlined),
-            title: const Text('问题反馈'),
-            trailing: Icon(Icons.arrow_forward, size: 16, color: outline),
-          ),
-          ListTile(
-            onTap: () => Get.toNamed(
-              '/webview',
-              parameters: {
-                'url': 'https://www.goofish.com/personal?userId=2216485229713',
-                'uaType': 'pc',
-              },
-              arguments: const {'inApp': true},
-            ),
-            leading: const Icon(Icons.favorite_rounded, color: Colors.pink),
-            title: const Text('支持开发者'),
-            trailing: Icon(Icons.arrow_forward, size: 16, color: outline),
           ),
           ListTile(
             onTap: () => Get.toNamed('/logs'),

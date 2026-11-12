@@ -51,10 +51,14 @@ abstract final class AudioPlaybackSession {
       WidgetsBinding.instance.addPostFrameCallback((_) => visiblePages.value++);
 
   static void onPageClosed() {
-    if (visiblePages.value > 0) visiblePages.value--;
-    if (Pref.audioContinueOnLeave) return;
-    // 页面还在释放中，等这一帧结束再关；期间又打开了听视频页就不关
+    final continueOnLeave = Pref.audioContinueOnLeave;
+    // dispose 处在 widget tree 锁定阶段，同步写 Rx 会让 PlaybackMiniBar 的
+    // Obx 立刻调 markNeedsBuild 触发断言。attach / onPageOpened 都已延到帧
+    // 结束后写，这里也必须一起延后，并保持「先减计数、再判断是否关闭」的顺序。
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (visiblePages.value > 0) visiblePages.value--;
+      if (continueOnLeave) return;
+      // 页面还在释放中，等这一帧结束再关；期间又打开了听视频页就不关
       if (visiblePages.value == 0) stop();
     });
   }

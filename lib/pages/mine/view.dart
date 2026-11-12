@@ -229,11 +229,6 @@ class _MediaPageState extends CommonPageState<MinePage>
           title: '离线缓存',
           onTap: () => Get.toNamed('/download'),
         ),
-      _actionButton(
-        icon: Icon(MdiIcons.routerNetwork, color: primary),
-        title: '网关管理',
-        onTap: () => Get.to(() => const BroTechPage()),
-      ),
       if (shown(SettingBoxKey.mineBtnAudioSettings))
         _actionButton(
           icon: Icon(MdiIcons.headphonesSettings, color: primary),

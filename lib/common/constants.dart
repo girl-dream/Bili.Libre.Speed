@@ -1,8 +1,6 @@
 abstract final class Constants {
   static const appName = 'PiliBro';
-  static const sourceCodeUrl = 'https://github.com/ucxn/Bili.Libre.Speed';
   static const sourceBranch = 'dev';
-  static const sourceBranchUrl = '$sourceCodeUrl/tree/$sourceBranch';
 
   static const baseHeaders = {
     // 'referer': HttpString.baseUrl,

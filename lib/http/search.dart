@@ -131,6 +131,9 @@ abstract final class SearchHttp {
     dynamic aid,
     dynamic bvid,
     int? part,
+    // /x/player/pagelist 对私密 / 权限受限稿件会返回「啥都木有」，
+    // 允许已有其它兜底路径的调用方静默失败，避免弹出无意义的 toast。
+    bool showErrorToast = true,
   }) async {
     final res = await Request().get(
       Api.ab2c,
@@ -147,7 +150,9 @@ abstract final class SearchHttp {
       }
       return null;
     } else {
-      SmartDialog.showToast("ab2c error: ${res.data['message']}");
+      if (showErrorToast) {
+        SmartDialog.showToast("ab2c error: ${res.data['message']}");
+      }
       return null;
     }
   }

@@ -77,12 +77,6 @@ abstract final class PcCheck {
                     colorScheme.error,
                     '装错版本了：系统是 64 位，用的却是 32 位版。32 位版的界面跑在 JIT 模式，启动和滑动都更慢。请到发布页下载 64 位版（rar 便携包或 exe 安装包），装好后把这个 32 位版的文件夹删掉就行。',
                   ),
-                  TextButton(
-                    onPressed: () => PageUtils.launchURL(
-                      '${Constants.sourceCodeUrl}/releases/latest',
-                    ),
-                    child: const Text('打开发布页'),
-                  ),
                 ],
                 if (os64) ...[
                   const Divider(),
