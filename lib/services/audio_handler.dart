@@ -63,27 +63,6 @@ typedef _StatusConfig = (
 );
 
 class VideoPlayerServiceHandler extends BaseAudioHandler with SeekHandler {
-  VideoPlayerServiceHandler() {
-    // Android 14 dispatches volume keys from the activity straight to the
-    // session without checking canHandleVolumeKey(), so a FIXED remote
-    // session swallows them there. Only verified to fall back on Android 16.
-    // 是否启用交给设置，默认值即上游的 Android 16 判断
-    if (Platform.isAndroid) {
-      final jStr = AndroidHelper.manufacturer();
-      if (jStr != null &&
-          jStr.toDartString(releaseOriginal: true).toLowerCase() == 'vivo' &&
-          Pref.vivoFixedVolume) {
-        androidPlaybackInfo.add(
-          RemoteAndroidPlaybackInfo(
-            volumeControlType: .fixed,
-            maxVolume: 100,
-            volume: 50,
-          ),
-        );
-      }
-    }
-  }
-
   static final List<MediaItem> _item = [];
   bool enableBackgroundPlay = Pref.enableBackgroundPlay;
 

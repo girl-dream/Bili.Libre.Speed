@@ -833,11 +833,6 @@ abstract final class Pref {
   static bool get showDynInteraction =>
       _setting.get(SettingBoxKey.showDynInteraction, defaultValue: true);
 
-  static bool get dynCompactVideoCard => _setting.get(
-    SettingBoxKey.dynCompactVideoCard,
-    defaultValue: false,
-  );
-
   static double get blockLimit =>
       _setting.get(SettingBoxKey.blockLimit, defaultValue: 0.0);
 
@@ -1864,12 +1859,6 @@ abstract final class Pref {
 
   static double get maxVolume => // desktop
       _setting.get(SettingBoxKey.maxVolume, defaultValue: 1.0);
-
-  // 只在 vivo 上读；默认按上游的判断，Android 16 起才开
-  static bool get vivoFixedVolume => _setting.get(
-    SettingBoxKey.vivoFixedVolume,
-    defaultValue: DeviceUtils.sdkInt >= 36,
-  );
 
   static List? get liveStream => _setting.get(SettingBoxKey.liveStream);
 

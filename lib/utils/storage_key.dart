@@ -107,8 +107,7 @@ abstract final class SettingBoxKey {
       preferAudioEntry = 'preferAudioEntry',
       showBatteryLevel = 'showBatteryLevel',
       playerVolume = 'playerVolume',
-      maxVolume = 'maxVolume',
-      vivoFixedVolume = 'vivoFixedVolume';
+      maxVolume = 'maxVolume';
 
   static const String enableVerticalExpand = 'enableVerticalExpand',
       feedBackEnable = 'feedBackEnable',
@@ -185,7 +184,6 @@ abstract final class SettingBoxKey {
       reply2SortType = 'reply2SortType',
       defaultDynamicType = 'defaultDynamicType',
       showDynInteraction = 'showDynInteraction',
-      dynCompactVideoCard = 'dynCompactVideoCard',
       enableHotKey = 'enableHotKey',
       enableSearchRcmd = 'enableSearchRcmd',
       enableQuickFav = 'enableQuickFav',

@@ -241,12 +241,6 @@ List<SettingsModel> get recommendSettings => [
           setState();
         }),
   ),
-  const NormalModel(
-    title: '致谢',
-    subtitle: '推荐请求的参数、翻页、身份与混合推荐参考了 bbspace、BiliPai、PiliNara、Pro 与 '
-        'Bili.Copilot，谢谢这些项目。也感谢Sonnet4.6和Opus5.5的妙手',
-    leading: Icon(Icons.favorite_outline),
-  ),
 ];
 NormalModel _sourceModel(RcmdSource source) => NormalModel(
   title: source.label,
